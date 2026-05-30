@@ -1,57 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  ShoppingBag, ShoppingCart, Calendar, Clock, Plus, Minus, Trash2, CheckCircle2, 
-  MapPin, Clipboard, UtensilsCrossed, Sparkles, MessageSquare, Star
+  ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CheckCircle2 
 } from 'lucide-react';
-import { mockDb, MenuItem, Order, Reservation, UserProfile } from '../utils/mockDb';
+import { mockDb, MenuItem, Order, UserProfile } from '../utils/mockDb';
 
-interface CustomerViewProps {
+interface MenuPageProps {
   currentUser: UserProfile | null;
   onOpenAuth: () => void;
 }
 
-export const CustomerView: React.FC<CustomerViewProps> = ({ currentUser, onOpenAuth }) => {
+export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>([]);
+  const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>(mockDb.getCart());
+
+  useEffect(() => {
+    mockDb.setCart(cart);
+  }, [cart]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderType, setOrderType] = useState<'dine-in' | 'takeaway'>('dine-in');
   const [tableNumber, setTableNumber] = useState('');
-  
-  // Reservation Form States
-  const [resName, setResName] = useState(currentUser?.fullName || '');
-  const [resEmail, setResEmail] = useState(currentUser?.email || '');
-  const [resPhone, setResPhone] = useState('');
-  const [resGuests, setResGuests] = useState(2);
-  const [resDate, setResDate] = useState('');
-  const [resTime, setResTime] = useState('18:00');
-  const [resSuccess, setResSuccess] = useState<Reservation | null>(null);
-
-  // Order Placement State
   const [orderSuccess, setOrderSuccess] = useState<Order | null>(null);
-  
-  // User orders tracking
-  const [userOrders, setUserOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     setMenu(mockDb.getMenu());
-    if (currentUser) {
-      setResName(currentUser.fullName);
-      setResEmail(currentUser.email);
-      // Fetch user's orders
-      const allOrders = mockDb.getOrders();
-      const filtered = allOrders.filter(o => o.customerEmail.toLowerCase() === currentUser.email.toLowerCase());
-      setUserOrders(filtered);
-    } else {
-      setUserOrders([]);
-    }
-  }, [currentUser]);
-
-  // Load menu items when they might be updated by admin
-  const refreshMenu = () => {
-    setMenu(mockDb.getMenu());
-  };
+  }, []);
 
   const categories = ['All', 'Starters', 'Mains', 'Desserts', 'Beverages'];
 
@@ -109,59 +83,17 @@ export const CustomerView: React.FC<CustomerViewProps> = ({ currentUser, onOpenA
     setOrderSuccess(order);
     setCart([]);
     setIsCartOpen(false);
-
-    // Refresh orders list
-    const allOrders = mockDb.getOrders();
-    setUserOrders(allOrders.filter(o => o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()));
   };
-
-  const handleBookTable = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) {
-      onOpenAuth();
-      return;
-    }
-    if (!resName || !resEmail || !resPhone || !resDate || !resTime) {
-      alert('Please fill out all table booking fields.');
-      return;
-    }
-
-    const reservation = mockDb.createReservation({
-      name: resName,
-      email: resEmail,
-      phone: resPhone,
-      guests: resGuests,
-      date: resDate,
-      time: resTime
-    });
-
-    setResSuccess(reservation);
-    setResPhone('');
-    setResGuests(2);
-    setResDate('');
-    setResTime('18:00');
-  };
-
-  // Poll orders database to show real time updates on the frontend status
-  useEffect(() => {
-    if (!currentUser) return;
-    const interval = setInterval(() => {
-      const allOrders = mockDb.getOrders();
-      const filtered = allOrders.filter(o => o.customerEmail.toLowerCase() === currentUser.email.toLowerCase());
-      setUserOrders(filtered);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [currentUser]);
 
   return (
-    <div className="space-y-16">
+    <div className="pt-[72px] min-h-screen pb-12">
       
       {/* ── Menu Section ── */}
-      <section id="menu-section" className="scroll-mt-[100px]">
+      <section id="menu-section" className="py-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <div className="text-center max-w-xl mx-auto mb-10">
             <span className="text-accent text-xs font-bold uppercase tracking-[0.2em] mb-2 block">Our Curated Selection</span>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold text-foreground">Explore Gourmet Delicacies</h2>
+            <h1 className="font-display text-3xl lg:text-4xl font-bold text-foreground">Explore Gourmet Delicacies</h1>
             <div className="w-12 h-0.5 bg-accent/40 mx-auto mt-4" />
           </div>
 
@@ -239,220 +171,25 @@ export const CustomerView: React.FC<CustomerViewProps> = ({ currentUser, onOpenA
         </div>
       </section>
 
-      {/* ── Table Reservation Section ── */}
-      <section id="reservation-section" className="bg-secondary/40 py-16 scroll-mt-[100px] border-y border-border/20">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <span className="text-accent text-xs font-bold uppercase tracking-[0.2em] mb-2 block">Table Booking</span>
-            <h2 className="font-display text-3xl font-bold text-foreground">Reserve A Dining Table</h2>
-            <div className="w-12 h-0.5 bg-accent/40 mx-auto mt-4" />
-          </div>
-
-          <div className="bg-card border border-border/20 shadow-xl rounded-2xl overflow-hidden p-6 md:p-8">
-            {resSuccess ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-8 space-y-4"
-              >
-                <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto border border-green-500/20">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-foreground">Reservation Request Submitted</h3>
-                  <p className="text-xs text-muted-foreground mt-1">We will review your booking and assign a table shortly.</p>
-                </div>
-                <div className="inline-block bg-secondary/80 rounded-xl p-4 text-left max-w-sm w-full border border-border/30 text-xs space-y-1.5">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Guest Name:</span> <span className="font-semibold text-foreground">{resSuccess.name}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Guests Count:</span> <span className="font-semibold text-foreground">{resSuccess.guests} People</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Date:</span> <span className="font-semibold text-foreground">{resSuccess.date}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Time:</span> <span className="font-semibold text-foreground">{resSuccess.time}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Status:</span> <span className="text-yellow-600 font-bold bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-200 uppercase text-[9px] tracking-wider">Pending Confirmation</span></div>
-                </div>
-                <div>
-                  <button
-                    onClick={() => setResSuccess(null)}
-                    className="px-6 py-2 bg-accent text-white text-xs font-semibold rounded-full hover:shadow-md transition-all cursor-pointer"
-                  >
-                    Book Another Table
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <form onSubmit={handleBookTable} className="space-y-6">
-                {!currentUser && (
-                  <div className="bg-accent/5 border border-accent/25 rounded-xl p-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-3">Please sign in to make and track table reservations easily.</p>
-                    <button
-                      type="button"
-                      onClick={onOpenAuth}
-                      className="px-5 py-2 bg-accent text-white text-[11px] font-bold rounded-lg hover:shadow-sm"
-                    >
-                      Login / Sign Up
-                    </button>
-                  </div>
-                )}
-                
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Full Name</label>
-                    <input 
-                      type="text" 
-                      required
-                      disabled={!currentUser}
-                      value={resName} 
-                      onChange={e => setResName(e.target.value)} 
-                      placeholder="Your Name"
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Email Address</label>
-                    <input 
-                      type="email" 
-                      required
-                      disabled={!currentUser}
-                      value={resEmail} 
-                      onChange={e => setResEmail(e.target.value)} 
-                      placeholder="name@example.com"
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Phone Number</label>
-                    <input 
-                      type="tel" 
-                      required
-                      disabled={!currentUser}
-                      value={resPhone} 
-                      onChange={e => setResPhone(e.target.value)} 
-                      placeholder="e.g. +1 (555) 123-4567"
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Guests Count</label>
-                    <select
-                      disabled={!currentUser}
-                      value={resGuests}
-                      onChange={e => setResGuests(Number(e.target.value))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 8, 10, 12].map(n => (
-                        <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Date</label>
-                    <input 
-                      type="date" 
-                      required
-                      disabled={!currentUser}
-                      value={resDate} 
-                      onChange={e => setResDate(e.target.value)} 
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Preferred Time</label>
-                    <select
-                      disabled={!currentUser}
-                      value={resTime}
-                      onChange={e => setResTime(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
-                    >
-                      {['12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30'].map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="text-center pt-2">
-                  <button
-                    type="submit"
-                    disabled={!currentUser}
-                    className="px-8 py-3 bg-accent text-white text-xs font-bold tracking-wider uppercase rounded-full hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent/90 transition-all cursor-pointer"
-                  >
-                    Confirm Table Booking
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Order Status Tracker ── */}
-      {currentUser && userOrders.length > 0 && (
-        <section id="order-tracking-section" className="max-w-4xl mx-auto px-6 scroll-mt-[100px]">
-          <div className="text-center mb-10">
-            <span className="text-accent text-xs font-bold uppercase tracking-[0.2em] mb-2 block">Track Progress</span>
-            <h2 className="font-display text-3xl font-bold text-foreground">Your Orders</h2>
-            <div className="w-12 h-0.5 bg-accent/40 mx-auto mt-4" />
-          </div>
-
-          <div className="space-y-4">
-            {userOrders.map((order) => (
-              <div 
-                key={order.id} 
-                className="bg-card border border-border/20 rounded-2xl overflow-hidden p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-accent/15 transition-all duration-300"
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-muted-foreground font-mono">ID: {order.id}</span>
-                    <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full ${
-                      order.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border border-yellow-200' :
-                      order.status === 'preparing' ? 'bg-blue-50 text-blue-600 border border-blue-200' :
-                      order.status === 'ready' ? 'bg-purple-50 text-purple-600 border border-purple-200' :
-                      order.status === 'delivered' ? 'bg-green-50 text-green-600 border border-green-200' :
-                      'bg-red-50 text-red-600 border border-red-200'
-                    }`}>
-                      {order.status}
-                    </span>
-                    <span className="text-[10px] font-semibold text-accent/80 bg-accent/5 px-2 rounded">
-                      {order.type === 'dine-in' ? `Table ${order.tableNumber}` : 'Takeaway'}
-                    </span>
-                  </div>
-
-                  <div className="text-xs text-foreground">
-                    <span className="font-bold">Ordered: </span>
-                    {order.items.map(item => `${item.menuItem.name} x${item.quantity}`).join(', ')}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Total: ${order.total.toFixed(2)}
-                  </div>
-                </div>
-
-                {/* Progress bar visual */}
-                <div className="flex flex-col items-end justify-center w-full md:w-60 space-y-1">
-                  <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-700 ${
-                        order.status === 'pending' ? 'w-1/4 bg-yellow-400' :
-                        order.status === 'preparing' ? 'w-2/4 bg-blue-400' :
-                        order.status === 'ready' ? 'w-3/4 bg-purple-400' :
-                        order.status === 'delivered' ? 'w-full bg-green-500' :
-                        'w-full bg-destructive'
-                      }`}
-                    />
-                  </div>
-                  <div className="text-[9px] text-muted-foreground font-semibold flex justify-between w-full">
-                    <span>Placed</span>
-                    <span>Preparing</span>
-                    <span>Ready</span>
-                    <span>Done</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      {/* Floating Cart Button */}
+      {cart.length > 0 && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="fixed bottom-8 right-8 z-40"
+        >
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => setIsCartOpen(true)}
+            className="bg-accent text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold shadow-lg cursor-pointer hover:shadow-xl transition-all relative"
+          >
+            <ShoppingCart className="w-6 h-6" />
+            <span className="absolute -top-1 -right-1 bg-foreground text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {cart.reduce((sum, i) => sum + i.quantity, 0)}
+            </span>
+          </motion.button>
+        </motion.div>
       )}
 
       {/* ── Cart Drawer / Overlay ── */}
@@ -597,7 +334,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({ currentUser, onOpenA
                             required
                             placeholder="e.g. 5"
                             value={tableNumber} 
-                            onChange={e => setResGuests(2) /* dummy */ || setTableNumber(e.target.value)} 
+                            onChange={e => setTableNumber(e.target.value)} 
                             className="w-full px-3 py-1.5 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent"
                           />
                         </div>
@@ -647,7 +384,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({ currentUser, onOpenA
                 onClick={() => setOrderSuccess(null)}
                 className="w-full py-2 bg-accent text-white text-xs font-semibold rounded-xl hover:shadow-md transition-all cursor-pointer"
               >
-                Track Order Status
+                Close / Keep Browsing
               </button>
             </motion.div>
           </div>
@@ -656,4 +393,4 @@ export const CustomerView: React.FC<CustomerViewProps> = ({ currentUser, onOpenA
 
     </div>
   );
-};
+}

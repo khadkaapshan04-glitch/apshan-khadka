@@ -4,13 +4,17 @@ import {
   User, UserPlus, ChefHat, Calendar, Truck, LogOut,
   Headphones, Users, Award, Trophy, Star, Heart, Shield, ShoppingCart, ArrowLeft
 } from "lucide-react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import uploadedFoodImg from "../imports/Minimalistic_simple_food_design_202605251743-1.jpeg";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import { mockDb, UserProfile } from "./utils/mockDb";
 import { AuthModal } from "./components/AuthModal";
-import { CustomerView } from "./components/CustomerView";
-import { KitchenView } from "./components/KitchenView";
-import { AdminView } from "./components/AdminView";
+import { HomePage } from "./pages/HomePage";
+import { MenuPage } from "./pages/MenuPage";
+import { KitchenPage } from "./pages/KitchenPage";
+import { AdminPage } from "./pages/AdminPage";
+import { BookTablePage } from "./pages/BookTablePage";
+import { DashboardPage } from "./pages/DashboardPage";
 
 const foodImages = [
   "https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnb3VybWV0JTIwc2FsbW9uJTIwZGlzaCUyMHBsYXRlZHxlbnwxfHx8fDE3Nzk2NzM1NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -20,6 +24,8 @@ const foodImages = [
 ];
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -30,7 +36,11 @@ export default function App() {
   // App Navigation & Role States
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [currentPortal, setCurrentPortal] = useState<'storefront' | 'kitchen' | 'admin'>('storefront');
+
+  const userOrdersTrackable = () => {
+    if (!currentUser) return false;
+    return mockDb.getOrders().some(o => o.customerEmail.toLowerCase() === currentUser.email.toLowerCase());
+  };
 
   useEffect(() => {
     // Check for logged in user session
@@ -54,18 +64,18 @@ export default function App() {
     setCurrentUser(user);
     // Auto-redirect staff/admin to their dashboard for a smooth UX
     if (user.role === 'admin') {
-      setCurrentPortal('admin');
+      navigate('/admin');
     } else if (user.role === 'staff') {
-      setCurrentPortal('kitchen');
+      navigate('/kitchen');
     } else {
-      setCurrentPortal('storefront');
+      navigate('/');
     }
   };
 
   const handleLogout = () => {
     mockDb.logout();
     setCurrentUser(null);
-    setCurrentPortal('storefront');
+    navigate('/');
   };
 
   const stagger = {
@@ -101,7 +111,7 @@ export default function App() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled || currentPortal !== 'storefront'
+          isScrolled || location.pathname !== '/'
             ? "bg-background/90 backdrop-blur-xl shadow-sm border-b border-border/30"
             : "bg-transparent"
         }`}
@@ -111,8 +121,8 @@ export default function App() {
 
             {/* Left side - Hamburger Menu + Logo */}
             <div className="flex items-center gap-4">
-              {/* Hamburger Menu Button (only for Storefront view) */}
-              {currentPortal === 'storefront' && (
+              {/* Hamburger Menu Button (only for Storefront views) */}
+              {(location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard') && (
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -128,9 +138,9 @@ export default function App() {
               )}
 
               {/* Back to storefront button when in other portals */}
-              {currentPortal !== 'storefront' && (
+              {(location.pathname !== '/' && location.pathname !== '/menu' && location.pathname !== '/book-table' && location.pathname !== '/dashboard') && (
                 <button
-                  onClick={() => setCurrentPortal('storefront')}
+                  onClick={() => navigate('/')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 text-xs font-semibold text-foreground/80 hover:text-foreground hover:border-accent/40 hover:bg-accent/5 transition-all cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Return to Store
@@ -140,7 +150,7 @@ export default function App() {
               {/* Logo */}
               <motion.div 
                 whileHover={{ scale: 1.02 }} 
-                onClick={() => setCurrentPortal('storefront')}
+                onClick={() => navigate('/')}
                 className="flex items-center gap-2.5 cursor-pointer select-none"
               >
                 <svg width="26" height="30" viewBox="0 0 26 30" fill="none">
@@ -166,18 +176,18 @@ export default function App() {
             {currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff') && (
               <div className="hidden md:flex bg-secondary p-1 rounded-xl">
                 <button
-                  onClick={() => setCurrentPortal('storefront')}
+                  onClick={() => navigate('/')}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    currentPortal === 'storefront' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                    (location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard') ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
                   }`}
                 >
-                  Storefront
+                  HOME
                 </button>
                 {currentUser.role === 'staff' && (
                   <button
-                    onClick={() => setCurrentPortal('kitchen')}
+                    onClick={() => navigate('/kitchen')}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      currentPortal === 'kitchen' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                      location.pathname === '/kitchen' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
                     }`}
                   >
                     Kitchen Dashboard
@@ -186,17 +196,17 @@ export default function App() {
                 {currentUser.role === 'admin' && (
                   <>
                     <button
-                      onClick={() => setCurrentPortal('kitchen')}
+                      onClick={() => navigate('/kitchen')}
                       className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        currentPortal === 'kitchen' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                        location.pathname === '/kitchen' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
                       }`}
                     >
                       Kitchen View
                     </button>
                     <button
-                      onClick={() => setCurrentPortal('admin')}
+                      onClick={() => navigate('/admin')}
                       className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        currentPortal === 'admin' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                        location.pathname === '/admin' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
                       }`}
                     >
                       Admin Panel
@@ -305,28 +315,32 @@ export default function App() {
               {/* Navigation Links */}
               <nav className="p-6 space-y-2">
                 {[
-                  { label: "Home Storefront", action: () => setCurrentPortal('storefront') },
-                  { label: "Browse Gourmet Menu", selector: "#menu-section" },
-                  { label: "Book Dining Table", selector: "#reservation-section" },
-                  ...(currentUser && userOrdersTrackable() ? [{ label: "Track Your Orders", selector: "#order-tracking-section" }] : []),
+                  { label: "Home", path: "/" },
+                  { label: "Menu", path: "/menu" },
+                  { label: "Reservations", path: "/book-table" },
+                  ...(currentUser && userOrdersTrackable() ? [{ label: "Track Your Orders", path: "/dashboard" }] : []),
                   ...(currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff') ? [
-                    { label: "Kitchen Monitor", action: () => setCurrentPortal('kitchen') }
+                    { label: "Kitchen Monitor", path: "/kitchen" }
                   ] : []),
                   ...(currentUser && currentUser.role === 'admin' ? [
-                    { label: "Admin Controller", action: () => setCurrentPortal('admin') }
+                    { label: "Admin Controller", path: "/admin" }
                   ] : [])
                 ].map((item, i) => (
                   <button
                     key={item.label}
                     onClick={() => {
                       setIsSidebarOpen(false);
-                      if (item.action) {
-                        item.action();
+                      if (item.path) {
+                        navigate(item.path);
                       } else if (item.selector) {
-                        setCurrentPortal('storefront');
-                        setTimeout(() => {
+                        if (location.pathname !== '/') {
+                          navigate('/');
+                          setTimeout(() => {
+                            document.querySelector(item.selector!)?.scrollIntoView({ behavior: 'smooth' });
+                          }, 300);
+                        } else {
                           document.querySelector(item.selector!)?.scrollIntoView({ behavior: 'smooth' });
-                        }, 100);
+                        }
                       }
                     }}
                     className="w-full text-left block px-4 py-3 rounded-xl hover:bg-accent/5 hover:text-foreground font-semibold text-xs text-foreground/70 transition-all duration-200 cursor-pointer"
@@ -369,217 +383,35 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Helper function to check if active orders exist */}
-      {(() => {
-        function userOrdersTrackable() {
-          if (!currentUser) return false;
-          return mockDb.getOrders().some(o => o.customerEmail.toLowerCase() === currentUser.email.toLowerCase());
-        }
-      })()}
-
       {/* ── Main View Manager ── */}
-      <div className="pt-[72px]">
-        {currentPortal === 'storefront' && (
-          <>
-            {/* Storefront Landing Hero */}
-            <section className="relative min-h-screen flex items-center">
-              {/* Top-right decorative arc */}
-              <div className="absolute top-0 right-0 w-[480px] h-[480px] pointer-events-none overflow-hidden">
-                <svg viewBox="0 0 400 400" className="w-full h-full opacity-[0.07]">
-                  <circle cx="400" cy="0" r="310" fill="none" stroke="#d4a574" strokeWidth="90" />
-                </svg>
-              </div>
-
-              <div className="max-w-7xl mx-auto px-6 lg:px-10 w-full">
-                <div className="grid lg:grid-cols-2 items-center gap-8 py-14 lg:py-20">
-
-                  {/* Left Hero */}
-                  <motion.div
-                    style={{ opacity: heroOpacity }}
-                    variants={stagger} initial="hidden" animate="visible"
-                    className="relative z-10"
-                  >
-                    <motion.div
-                      className="w-12 h-[3px] bg-accent rounded-full mb-6"
-                      initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
-                      transition={{ duration: 0.55, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                      style={{ transformOrigin: "left" }}
-                    />
-
-                    <motion.h1 variants={fadeUp} className="font-display leading-[1.08] mb-5">
-                      <span className="block text-[3.1rem] lg:text-[4rem] font-semibold text-foreground">
-                        Delicious Food,
-                      </span>
-                      <span className="block text-[3.1rem] lg:text-[4rem] font-semibold text-foreground">
-                        Perfect <span className="text-accent italic">Experience</span>
-                      </span>
-                    </motion.h1>
-
-                    <motion.p variants={fadeUp} className="text-[0.93rem] text-muted-foreground leading-relaxed max-w-[390px] mb-10">
-                      Good food brings people together. We serve flavors that stay with you, moments that bring you back.
-                    </motion.p>
-
-                    {/* Feature cards */}
-                    <motion.div variants={stagger} className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-[600px]">
-                      {features.map((f) => (
-                        <motion.div
-                          key={f.title}
-                          variants={fadeUp}
-                          whileHover={{ y: -5, scale: 1.025 }}
-                          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                          onClick={() => {
-                            if (f.title.includes("Booking")) {
-                              document.querySelector("#reservation-section")?.scrollIntoView({ behavior: 'smooth' });
-                            } else if (f.title.includes("Food") || f.title.includes("Delivery")) {
-                              document.querySelector("#menu-section")?.scrollIntoView({ behavior: 'smooth' });
-                            }
-                          }}
-                          className="bg-white/75 backdrop-blur-sm border border-border/35 rounded-2xl p-4 cursor-pointer group hover:border-accent/30 hover:shadow-sm transition-all duration-300"
-                        >
-                          <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors duration-300">
-                            <f.icon className="w-[18px] h-[18px] text-accent" strokeWidth={1.5} />
-                          </div>
-                          <div className="text-[11px] font-semibold text-foreground mb-0.5 leading-tight">{f.title}</div>
-                          <div className="text-[10px] text-muted-foreground leading-relaxed">{f.desc}</div>
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  </motion.div>
-
-                  {/* Right Plate */}
-                  <motion.div
-                    style={{ scale: heroScale }}
-                    initial={{ opacity: 0, x: 55 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
-                    className="relative flex items-center justify-center"
-                  >
-                    <div className="absolute inset-0 pointer-events-none"
-                      style={{ background: "radial-gradient(ellipse 70% 65% at 55% 50%, rgba(212,165,116,0.13) 0%, transparent 70%)" }}
-                    />
-
-                    {/* Animated plant */}
-                    <div className="absolute left-[4%] top-1/2 -translate-y-[48%] w-44 h-60 pointer-events-none z-10">
-                      <svg viewBox="0 0 200 300" className="w-full h-full" fill="none">
-                        <motion.g
-                          animate={{ rotate: [0, 1.8, -1, 0] }}
-                          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                          style={{ transformOrigin: "100px 285px" }}
-                        >
-                          <path d="M100 285 Q97 230 104 170 Q100 110 91 52"
-                            stroke="#6a9459" strokeWidth="2.4" strokeLinecap="round" />
-                          <motion.path d="M101 182 Q145 155 162 118 Q136 148 103 178" fill="#88b874"
-                            animate={{ rotate: [0, 3, 0] }} transition={{ duration: 4.2, repeat: Infinity, delay: 0.4 }}
-                            style={{ transformOrigin: "101px 182px" }} />
-                          <motion.path d="M101 145 Q150 112 168 72 Q140 104 103 142" fill="#79aa65"
-                            animate={{ rotate: [0, 4, 0] }} transition={{ duration: 3.8, repeat: Infinity, delay: 0.1 }}
-                            style={{ transformOrigin: "101px 145px" }} />
-                          <motion.path d="M98 105 Q135 72 148 40 Q124 70 96 102" fill="#6ba058"
-                            animate={{ rotate: [0, 2.5, 0] }} transition={{ duration: 4.5, repeat: Infinity, delay: 0.6 }}
-                            style={{ transformOrigin: "98px 105px" }} />
-                          <motion.path d="M101 182 Q57 150 36 112 Q66 143 100 178" fill="#93c07e"
-                            animate={{ rotate: [0, -2.5, 0] }} transition={{ duration: 4.6, repeat: Infinity, delay: 0.9 }}
-                            style={{ transformOrigin: "101px 182px" }} />
-                          <motion.path d="M101 145 Q54 108 32 68 Q63 100 100 142" fill="#82b46c"
-                            animate={{ rotate: [0, -3, 0] }} transition={{ duration: 4.0, repeat: Infinity, delay: 0.7 }}
-                            style={{ transformOrigin: "101px 145px" }} />
-                          <motion.path d="M98 105 Q64 70 50 36 Q74 66 96 102" fill="#73a35f"
-                            animate={{ rotate: [0, -2, 0] }} transition={{ duration: 3.9, repeat: Infinity, delay: 0.3 }}
-                            style={{ transformOrigin: "98px 105px" }} />
-                          <path d="M91 55 Q97 36 88 16 Q93 36 90 54" fill="#5f8f4e" />
-                        </motion.g>
-                      </svg>
-                    </div>
-
-                    {/* Plate slider */}
-                    <motion.div
-                      className="relative z-20 w-[400px] h-[400px] lg:w-[490px] lg:h-[490px]"
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={currentImageIndex}
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -15 }}
-                          transition={{ duration: 0.8, ease: "easeInOut" }}
-                          className="absolute top-0 left-0 w-full h-full"
-                        >
-                          <ImageWithFallback
-                            src={foodImages[currentImageIndex]}
-                            alt="Gourmet food plate"
-                            className="w-full h-full object-cover"
-                            style={{
-                              maskImage: "radial-gradient(ellipse 58% 56% at 52% 50%, black 28%, rgba(0,0,0,0.55) 46%, transparent 68%)",
-                              WebkitMaskImage: "radial-gradient(ellipse 58% 56% at 52% 50%, black 28%, rgba(0,0,0,0.55) 46%, transparent 68%)",
-                            }}
-                          />
-                        </motion.div>
-                      </AnimatePresence>
-                    </motion.div>
-
-                    {/* Heart badge */}
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.82, x: 18 }}
-                      animate={{ opacity: 1, scale: 1, x: 0 }}
-                      transition={{ delay: 1.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                      whileHover={{ scale: 1.06 }}
-                      className="absolute right-0 top-[38%] z-30 bg-white/96 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-lg cursor-pointer flex items-center gap-2"
-                    >
-                      <motion.div animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 1.4, repeat: Infinity }}>
-                        <Heart className="w-4 h-4 text-red-400 fill-red-400" />
-                      </motion.div>
-                      <span className="text-xs font-semibold text-foreground font-body">Made with love</span>
-                    </motion.div>
-                  </motion.div>
-                </div>
-              </div>
-            </section>
-
-            {/* Storefront Landing Stats */}
-            <section className="border-t border-border/35 py-14 bg-card/20">
-              <div className="max-w-7xl mx-auto px-6 lg:px-10">
-                <motion.div
-                  initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}
-                  variants={stagger}
-                  className="grid grid-cols-2 lg:grid-cols-4 gap-8"
-                >
-                  {stats.map((s, i) => (
-                    <motion.div key={s.label} variants={fadeUp} whileHover={{ y: -6 }} className="text-center group cursor-pointer">
-                      <motion.div
-                        className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent/10 mb-3 group-hover:bg-accent/20 transition-colors duration-300"
-                        whileHover={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 0.5 }}
-                      >
-                        <s.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
-                      </motion.div>
-                      <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.08 + 0.3, type: "spring", stiffness: 180 }}
-                      >
-                        <div className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-1">{s.value}</div>
-                        <div className="text-xs text-muted-foreground font-medium">{s.label}</div>
-                      </motion.div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </div>
-            </section>
-
-            {/* Dynamic Store Menu, Order Placement, and Table Reservation Views */}
-            <div className="py-16">
-              <CustomerView 
-                currentUser={currentUser} 
-                onOpenAuth={() => setIsAuthOpen(true)} 
-              />
-            </div>
-          </>
-        )}
-
-        {/* Portals */}
-        {currentPortal === 'kitchen' && <KitchenView />}
-        {currentPortal === 'admin' && <AdminView />}
+      <div>
+        <Routes>
+          <Route path="/" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
+          <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
+          <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
+          <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
+          <Route 
+            path="/kitchen" 
+            element={
+              currentUser && (currentUser.role === 'staff' || currentUser.role === 'admin') ? (
+                <KitchenPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+          <Route 
+            path="/admin" 
+            element={
+              currentUser && currentUser.role === 'admin' ? (
+                <AdminPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
 
       {/* Authentication Modal Popup */}

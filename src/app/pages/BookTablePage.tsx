@@ -1,0 +1,207 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CheckCircle2 } from 'lucide-react';
+import { mockDb, Reservation, UserProfile } from '../utils/mockDb';
+
+interface BookTablePageProps {
+  currentUser: UserProfile | null;
+  onOpenAuth: () => void;
+}
+
+export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
+  // Reservation Form States
+  const [resName, setResName] = useState(currentUser?.fullName || '');
+  const [resEmail, setResEmail] = useState(currentUser?.email || '');
+  const [resPhone, setResPhone] = useState('');
+  const [resGuests, setResGuests] = useState(2);
+  const [resDate, setResDate] = useState('');
+  const [resTime, setResTime] = useState('18:00');
+  const [resSuccess, setResSuccess] = useState<Reservation | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setResName(currentUser.fullName);
+      setResEmail(currentUser.email);
+    }
+  }, [currentUser]);
+
+  const handleBookTable = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) {
+      onOpenAuth();
+      return;
+    }
+    if (!resName || !resEmail || !resPhone || !resDate || !resTime) {
+      alert('Please fill out all table booking fields.');
+      return;
+    }
+
+    const reservation = mockDb.createReservation({
+      name: resName,
+      email: resEmail,
+      phone: resPhone,
+      guests: resGuests,
+      date: resDate,
+      time: resTime
+    });
+
+    setResSuccess(reservation);
+    setResPhone('');
+    setResGuests(2);
+    setResDate('');
+    setResTime('18:00');
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-12 pt-[72px]">
+      {/* ── Table Reservation Section ── */}
+      <section id="reservation-section" className="py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-10">
+            <span className="text-accent text-xs font-bold uppercase tracking-[0.2em] mb-2 block">Table Booking</span>
+            <h2 className="font-display text-3xl font-bold text-foreground">Reserve A Dining Table</h2>
+            <div className="w-12 h-0.5 bg-accent/40 mx-auto mt-4" />
+          </div>
+
+          <div className="bg-card border border-border/20 shadow-xl rounded-2xl overflow-hidden p-6 md:p-8">
+            {resSuccess ? (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-8 space-y-4"
+              >
+                <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto border border-green-500/20">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-foreground">Reservation Request Submitted</h3>
+                  <p className="text-xs text-muted-foreground mt-1">We will review your booking and assign a table shortly.</p>
+                </div>
+                <div className="inline-block bg-secondary/80 rounded-xl p-4 text-left max-w-sm w-full border border-border/30 text-xs space-y-1.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Guest Name:</span> <span className="font-semibold text-foreground">{resSuccess.name}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Guests Count:</span> <span className="font-semibold text-foreground">{resSuccess.guests} People</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Date:</span> <span className="font-semibold text-foreground">{resSuccess.date}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Time:</span> <span className="font-semibold text-foreground">{resSuccess.time}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Status:</span> <span className="text-yellow-600 font-bold bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-200 uppercase text-[9px] tracking-wider">Pending Confirmation</span></div>
+                </div>
+                <div>
+                  <button
+                    onClick={() => setResSuccess(null)}
+                    className="px-6 py-2 bg-accent text-white text-xs font-semibold rounded-full hover:shadow-md transition-all cursor-pointer"
+                  >
+                    Book Another Table
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleBookTable} className="space-y-6">
+                {!currentUser && (
+                  <div className="bg-accent/5 border border-accent/25 rounded-xl p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-3">Please sign in to make and track table reservations easily.</p>
+                    <button
+                      type="button"
+                      onClick={onOpenAuth}
+                      className="px-5 py-2 bg-accent text-white text-[11px] font-bold rounded-lg hover:shadow-sm"
+                    >
+                      Login / Sign Up
+                    </button>
+                  </div>
+                )}
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Full Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      disabled={!currentUser}
+                      value={resName} 
+                      onChange={e => setResName(e.target.value)} 
+                      placeholder="Your Name"
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Email Address</label>
+                    <input 
+                      type="email" 
+                      required
+                      disabled={!currentUser}
+                      value={resEmail} 
+                      onChange={e => setResEmail(e.target.value)} 
+                      placeholder="name@example.com"
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                    <input 
+                      type="tel" 
+                      required
+                      disabled={!currentUser}
+                      value={resPhone} 
+                      onChange={e => setResPhone(e.target.value)} 
+                      placeholder="e.g. +1 (555) 123-4567"
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Guests Count</label>
+                    <select
+                      disabled={!currentUser}
+                      value={resGuests}
+                      onChange={e => setResGuests(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 8, 10, 12].map(n => (
+                        <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Date</label>
+                    <input 
+                      type="date" 
+                      required
+                      disabled={!currentUser}
+                      value={resDate} 
+                      onChange={e => setResDate(e.target.value)} 
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Preferred Time</label>
+                    <select
+                      disabled={!currentUser}
+                      value={resTime}
+                      onChange={e => setResTime(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
+                    >
+                      {['12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30'].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="submit"
+                    disabled={!currentUser}
+                    className="px-8 py-3 bg-accent text-white text-xs font-bold tracking-wider uppercase rounded-full hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent/90 transition-all cursor-pointer"
+                  >
+                    Confirm Table Booking
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

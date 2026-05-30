@@ -146,6 +146,9 @@ const initDb = () => {
   if (!localStorage.getItem('flavore_reservations')) {
     localStorage.setItem('flavore_reservations', JSON.stringify([]));
   }
+  if (!localStorage.getItem('flavore_cart')) {
+    localStorage.setItem('flavore_cart', JSON.stringify([]));
+  }
 };
 
 // Initialize
@@ -260,5 +263,15 @@ export const mockDb = {
       return reservations[index];
     }
     return null;
+  },
+
+  // --- Cart Services ---
+  getCart: (): { menuItem: MenuItem; quantity: number }[] => {
+    return JSON.parse(localStorage.getItem('flavore_cart') || '[]');
+  },
+
+  setCart: (cart: { menuItem: MenuItem; quantity: number }[]) => {
+    localStorage.setItem('flavore_cart', JSON.stringify(cart));
   }
 };
+
