@@ -16,6 +16,7 @@ import {
 import uploadedFoodImg from '../../imports/Minimalistic_simple_food_design_202605251743-1.jpeg';
 
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { FloatingFood3D } from '../components/FloatingFood3D';
 
 import { mockDb, UserProfile, type Reservation, type Order } from '../utils/mockDb';
 
@@ -78,8 +79,19 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
     return () => clearInterval(interval);
   }, []);
 
+  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
+    const { innerWidth, innerHeight } = window;
+    setMousePos({
+      x: (clientX / innerWidth - 0.5) * 20,
+      y: (clientY / innerHeight - 0.5) * 20,
+    });
+  };
+
   return (
-    <div className="pt-[72px] min-h-screen">
+    <div className="pt-[72px] min-h-screen" onMouseMove={handleMouseMove}>
       <section className="relative min-h-screen flex items-center">
         <div className="absolute top-0 right-0 w-[480px] h-[480px] pointer-events-none overflow-hidden">
           <svg viewBox="0 0 400 400" className="w-full h-full opacity-[0.07]">
@@ -216,29 +228,40 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
 
               <motion.div
                 className="relative z-20 w-[400px] h-[400px] lg:w-[490px] lg:h-[490px]"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 5.2, repeat: Infinity, ease: 'easeInOut' }}
+                animate={{
+                  y: [0, -10, 0],
+                  rotateX: -mousePos.y,
+                  rotateY: mousePos.x
+                }}
+                transition={{
+                  y: { duration: 5.2, repeat: Infinity, ease: 'easeInOut' },
+                  rotateX: { type: 'spring', stiffness: 100, damping: 30 },
+                  rotateY: { type: 'spring', stiffness: 100, damping: 30 }
+                }}
+                style={{ perspective: 1000 }}
               >
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentImageIndex}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
+                    initial={{ opacity: 0, y: 15, rotateY: -20 }}
+                    animate={{ opacity: 1, y: 0, rotateY: 0 }}
+                    exit={{ opacity: 0, y: -15, rotateY: 20 }}
                     transition={{ duration: 0.8, ease: 'easeInOut' }}
                     className="absolute top-0 left-0 w-full h-full"
                   >
-                    <ImageWithFallback
-                      src={foodImages[currentImageIndex]}
-                      alt="Gourmet food plate"
-                      className="w-full h-full object-cover"
-                      style={{
-                        maskImage:
-                          'radial-gradient(ellipse 58% 56% at 52% 50%, black 28%, rgba(0,0,0,0.55) 46%, transparent 68%)',
-                        WebkitMaskImage:
-                          'radial-gradient(ellipse 58% 56% at 52% 50%, black 28%, rgba(0,0,0,0.55) 46%, transparent 68%)',
-                      }}
-                    />
+                    <div className="relative w-full h-full drop-shadow-[0_35px_35px_rgba(0,0,0,0.25)]">
+                      <ImageWithFallback
+                        src={foodImages[currentImageIndex]}
+                        alt="Gourmet food plate"
+                        className="w-full h-full object-cover"
+                        style={{
+                          maskImage:
+                            'radial-gradient(ellipse 58% 56% at 52% 50%, black 28%, rgba(0,0,0,0.55) 46%, transparent 68%)',
+                          WebkitMaskImage:
+                            'radial-gradient(ellipse 58% 56% at 52% 50%, black 28%, rgba(0,0,0,0.55) 46%, transparent 68%)',
+                        }}
+                      />
+                    </div>
                   </motion.div>
                 </AnimatePresence>
               </motion.div>

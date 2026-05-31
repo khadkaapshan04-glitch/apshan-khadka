@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { mockDb, Order, UserProfile } from '../utils/mockDb';
+import { FloatingFood3D } from '../components/FloatingFood3D';
 
 interface DashboardPageProps {
   currentUser: UserProfile | null;
@@ -43,7 +44,21 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-12 pt-[72px]">
+    <div className="min-h-screen bg-background pb-12 pt-[72px] relative overflow-hidden">
+      {/* Background 3D Elements */}
+      <FloatingFood3D
+        src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600"
+        size={200}
+        className="absolute -right-16 top-40 opacity-30 hidden lg:block"
+        initialRotation={{ x: 10, y: 30, z: -5 }}
+      />
+      <FloatingFood3D
+        src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&q=80&w=600"
+        size={160}
+        className="absolute -left-10 bottom-40 opacity-30 hidden lg:block"
+        initialRotation={{ x: 30, y: -10, z: 15 }}
+      />
+
       {/* ── Order Status Tracker ── */}
       <section id="order-tracking-section" className="max-w-4xl mx-auto px-6 py-16">
         <div className="text-center mb-10">

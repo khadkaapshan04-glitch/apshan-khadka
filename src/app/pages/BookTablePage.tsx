@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2 } from 'lucide-react';
 import { mockDb, Reservation, UserProfile } from '../utils/mockDb';
+import { FloatingFood3D } from '../components/FloatingFood3D';
 
 interface BookTablePageProps {
   currentUser: UserProfile | null;
@@ -53,7 +54,21 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-12 pt-[72px]">
+    <div className="min-h-screen bg-background pb-12 pt-[72px] relative overflow-hidden">
+      {/* Background 3D Elements */}
+      <FloatingFood3D
+        src="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&q=80&w=600"
+        size={180}
+        className="absolute -left-12 top-20 opacity-40 hidden lg:block"
+        initialRotation={{ x: 20, y: -20, z: 10 }}
+      />
+      <FloatingFood3D
+        src="https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=600"
+        size={150}
+        className="absolute -right-10 bottom-20 opacity-40 hidden lg:block"
+        initialRotation={{ x: -20, y: 20, z: -10 }}
+      />
+
       {/* ── Table Reservation Section ── */}
       <section id="reservation-section" className="py-16">
         <div className="max-w-4xl mx-auto px-6">
