@@ -124,16 +124,23 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
+                  whileHover={{
+                    y: -10,
+                    rotateX: 5,
+                    rotateY: -5,
+                    transition: { duration: 0.3 }
+                  }}
                   transition={{ duration: 0.4 }}
-                  className="bg-card border border-border/20 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md hover:border-accent/20 transition-all duration-300 group"
+                  className="bg-card border border-border/20 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-xl hover:border-accent/20 transition-all duration-300 group"
+                  style={{ transformStyle: 'preserve-3d', perspective: 1000 }}
                 >
                   <div>
                     {/* Item Image */}
-                    <div className="h-44 w-full overflow-hidden relative bg-secondary">
+                    <div className="h-44 w-full overflow-hidden relative bg-secondary" style={{ transform: 'translateZ(20px)' }}>
                       <img 
                         src={item.image_url} 
                         alt={item.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         loading="lazy"
                       />
                       {!item.is_available && (
@@ -149,13 +156,13 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                     </div>
 
                     {/* Content */}
-                    <div className="p-4">
+                    <div className="p-4" style={{ transform: 'translateZ(30px)' }}>
                       <h4 className="font-semibold text-foreground text-sm group-hover:text-accent transition-colors mb-1">{item.name}</h4>
                       <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3">{item.description}</p>
                     </div>
                   </div>
 
-                  <div className="p-4 pt-0">
+                  <div className="p-4 pt-0" style={{ transform: 'translateZ(40px)' }}>
                     <button
                       onClick={() => addToCart(item)}
                       disabled={!item.is_available}
