@@ -15,6 +15,7 @@ import { KitchenPage } from "./pages/KitchenPage";
 import { AdminPage } from "./pages/AdminPage";
 import { BookTablePage } from "./pages/BookTablePage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { GoldenEmbersBackground } from "./components/GoldenEmbersBackground";
 
 const foodImages = [
   "https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnb3VybWV0JTIwc2FsbW9uJTIwZGlzaCUyMHBsYXRlZHxlbnwxfHx8fDE3Nzk2NzM1NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -103,7 +104,8 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden pb-12">
+    <div className="min-h-screen bg-background overflow-x-hidden pb-12 relative">
+      <GoldenEmbersBackground />
 
       {/* ── Navbar ── */}
       <motion.header
@@ -318,7 +320,7 @@ export default function App() {
                   { label: "Home", path: "/" },
                   { label: "Menu", path: "/menu" },
                   { label: "Reservations", path: "/book-table" },
-                  ...(currentUser && userOrdersTrackable() ? [{ label: "Track Your Orders", path: "/dashboard" }] : []),
+                  ...(currentUser ? [{ label: "My Dashboard", path: "/dashboard" }] : []),
                   ...(currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff') ? [
                     { label: "Kitchen Monitor", path: "/kitchen" }
                   ] : []),
@@ -384,7 +386,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* ── Main View Manager ── */}
-      <div>
+      <div className="relative z-10">
         <Routes>
           <Route path="/" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />

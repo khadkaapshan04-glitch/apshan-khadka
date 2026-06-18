@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { ChefHat, Clock, AlertCircle, CheckCircle, Package, XCircle, ArrowRight } from 'lucide-react';
 import { mockDb, Order, OrderStatus } from '../utils/mockDb';
 
@@ -26,6 +25,7 @@ export const KitchenView: React.FC = () => {
       case 'pending': return 'bg-yellow-50 text-yellow-600 border border-yellow-200';
       case 'preparing': return 'bg-blue-50 text-blue-600 border border-blue-200';
       case 'ready': return 'bg-purple-50 text-purple-600 border border-purple-200';
+      case 'out-for-delivery': return 'bg-indigo-50 text-indigo-600 border border-indigo-200';
       case 'delivered': return 'bg-green-50 text-green-600 border border-green-200';
       default: return 'bg-red-50 text-red-600 border border-red-200';
     }
@@ -87,7 +87,11 @@ export const KitchenView: React.FC = () => {
                     <div className="flex justify-between items-center text-[10px]">
                       <span className="font-mono font-bold text-muted-foreground">{order.id}</span>
                       <span className="font-semibold text-accent/80 bg-accent/5 px-2 py-0.5 rounded">
-                        {order.type === 'dine-in' ? `Table ${order.tableNumber}` : 'Takeaway'}
+                        {order.type === 'dine-in' 
+                          ? `Table ${order.tableNumber}` 
+                          : order.type === 'delivery' 
+                          ? 'Delivery' 
+                          : 'Takeaway'}
                       </span>
                     </div>
 
@@ -156,7 +160,11 @@ export const KitchenView: React.FC = () => {
                     <div className="flex justify-between items-center text-[10px]">
                       <span className="font-mono font-bold text-muted-foreground">{order.id}</span>
                       <span className="font-semibold text-accent/80 bg-accent/5 px-2 py-0.5 rounded">
-                        {order.type === 'dine-in' ? `Table ${order.tableNumber}` : 'Takeaway'}
+                        {order.type === 'dine-in' 
+                          ? `Table ${order.tableNumber}` 
+                          : order.type === 'delivery' 
+                          ? 'Delivery' 
+                          : 'Takeaway'}
                       </span>
                     </div>
 
@@ -188,36 +196,44 @@ export const KitchenView: React.FC = () => {
           </div>
         </div>
 
-        {/* Column 3: Ready for Delivery */}
+        {/* Column 3: Ready for Service & Delivery */}
         <div className="space-y-4">
           <div className="flex items-center justify-between bg-purple-50/50 dark:bg-purple-950/10 border border-purple-100 dark:border-purple-950/20 px-4 py-3 rounded-2xl">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-purple-600" />
-              <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">Ready for Service</span>
+              <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">Ready & Out for Delivery</span>
             </div>
             <span className="text-xs font-bold bg-purple-100 dark:bg-purple-950/40 text-purple-800 px-2 py-0.5 rounded-full">
-              {activeOrders.filter(o => o.status === 'ready').length}
+              {activeOrders.filter(o => o.status === 'ready' || o.status === 'out-for-delivery').length}
             </span>
           </div>
 
           <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
             <AnimatePresence mode="popLayout">
-              {activeOrders.filter(o => o.status === 'ready').length === 0 ? (
+              {activeOrders.filter(o => o.status === 'ready' || o.status === 'out-for-delivery').length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-10 bg-secondary/20 rounded-xl border border-dashed border-border/40">No orders ready</p>
               ) : (
-                activeOrders.filter(o => o.status === 'ready').map(order => (
+                activeOrders.filter(o => o.status === 'ready' || o.status === 'out-for-delivery').map(order => (
                   <motion.div
                     key={order.id}
                     layout
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    className="bg-card border border-border/20 rounded-xl p-4 shadow-sm hover:border-purple-200 transition-all space-y-3"
+                    className={`bg-card border rounded-xl p-4 shadow-sm transition-all space-y-3 ${
+                      order.status === 'out-for-delivery'
+                        ? 'border-indigo-300 hover:border-indigo-400 bg-indigo-50/5 dark:bg-indigo-950/5'
+                        : 'border-border/20 hover:border-purple-200'
+                    }`}
                   >
                     <div className="flex justify-between items-center text-[10px]">
                       <span className="font-mono font-bold text-muted-foreground">{order.id}</span>
                       <span className="font-semibold text-accent/80 bg-accent/5 px-2 py-0.5 rounded">
-                        {order.type === 'dine-in' ? `Table ${order.tableNumber}` : 'Takeaway'}
+                        {order.type === 'dine-in'
+                          ? `Table ${order.tableNumber}`
+                          : order.type === 'delivery'
+                          ? 'Delivery'
+                          : 'Takeaway'}
                       </span>
                     </div>
 
@@ -230,17 +246,56 @@ export const KitchenView: React.FC = () => {
                       ))}
                     </div>
 
+                    {order.type === 'delivery' && (order.deliveryAddress || order.deliveryPhone) && (
+                      <div className="text-[10px] text-muted-foreground bg-secondary/30 p-2 rounded-lg space-y-1 border border-border/10">
+                        {order.deliveryAddress && (
+                          <div className="flex items-start gap-1">
+                            <span className="font-semibold shrink-0 text-foreground">Addr:</span>
+                            <span className="line-clamp-2">{order.deliveryAddress}</span>
+                          </div>
+                        )}
+                        {order.deliveryPhone && (
+                          <div>
+                            <span className="font-semibold text-foreground">Phone:</span> {order.deliveryPhone}
+                          </div>
+                        )}
+                        {order.deliveryNotes && (
+                          <div className="italic text-[9px] text-muted-foreground/80 mt-0.5">
+                            "{order.deliveryNotes}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-center pt-1">
                       <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5" />
                         {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <button
-                        onClick={() => handleStatusChange(order.id, 'delivered')}
-                        className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        Serve / Deliver <CheckCircle className="w-3 h-3" />
-                      </button>
+                      {order.type === 'delivery' ? (
+                        order.status === 'ready' ? (
+                          <button
+                            onClick={() => handleStatusChange(order.id, 'out-for-delivery')}
+                            className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            Dispatch <CheckCircle className="w-3 h-3" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleStatusChange(order.id, 'delivered')}
+                            className="px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            Delivered <CheckCircle className="w-3 h-3" />
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => handleStatusChange(order.id, 'delivered')}
+                          className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          Serve / Deliver <CheckCircle className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 ))
@@ -274,7 +329,13 @@ export const KitchenView: React.FC = () => {
                   <td className="py-2.5 font-mono text-muted-foreground">{order.id}</td>
                   <td className="py-2.5 font-semibold">{order.customerName}</td>
                   <td className="py-2.5">{order.items.map(i => `${i.menuItem.name} x${i.quantity}`).join(', ')}</td>
-                  <td className="py-2.5 font-medium">{order.type === 'dine-in' ? `Dine-In (T-${order.tableNumber})` : 'Takeaway'}</td>
+                  <td className="py-2.5 font-medium">
+                    {order.type === 'dine-in' 
+                      ? `Dine-In (T-${order.tableNumber})` 
+                      : order.type === 'delivery' 
+                      ? 'Delivery' 
+                      : 'Takeaway'}
+                  </td>
                   <td className="py-2.5 text-accent font-bold">${order.total.toFixed(2)}</td>
                   <td className="py-2.5">
                     <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${

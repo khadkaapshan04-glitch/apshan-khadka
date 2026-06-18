@@ -15,8 +15,8 @@ export interface OrderItem {
   quantity: number;
 }
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-export type OrderType = 'dine-in' | 'takeaway';
+export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'out-for-delivery' | 'delivered' | 'cancelled';
+export type OrderType = 'dine-in' | 'takeaway' | 'delivery';
 
 export interface Order {
   id: string;
@@ -27,6 +27,10 @@ export interface Order {
   total: number;
   type: OrderType;
   tableNumber?: string;
+  deliveryAddress?: string;
+  deliveryPhone?: string;
+  deliveryNotes?: string;
+  estimatedDelivery?: string;
   created_at: string;
 }
 
@@ -211,13 +215,17 @@ export const mockDb = {
     return JSON.parse(localStorage.getItem('flavore_orders') || '[]');
   },
 
-  placeOrder: (orderData: Omit<Order, 'id' | 'status' | 'created_at'>): Order => {
+  placeOrder: (orderData: Omit<Order, 'id' | 'status' | 'created_at' | 'estimatedDelivery'>): Order => {
     const orders = mockDb.getOrders();
+    const now = new Date();
     const newOrder: Order = {
       ...orderData,
       id: 'ord_' + Math.random().toString(36).substr(2, 9),
       status: 'pending',
-      created_at: new Date().toISOString()
+      created_at: now.toISOString(),
+      ...(orderData.type === 'delivery' ? {
+        estimatedDelivery: new Date(now.getTime() + (30 + Math.floor(Math.random() * 15)) * 60000).toISOString()
+      } : {})
     };
     orders.unshift(newOrder); // Add to beginning of array
     localStorage.setItem('flavore_orders', JSON.stringify(orders));

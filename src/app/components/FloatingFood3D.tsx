@@ -33,43 +33,17 @@ export function FloatingFood3D({
         y: 0
       }}
       animate={{
-        rotateX: [
-          initialRotation.x - rotationIntensity,
-          initialRotation.x + rotationIntensity,
-          initialRotation.x - rotationIntensity
-        ],
-        rotateY: [
-          initialRotation.y - rotationIntensity,
-          initialRotation.y + rotationIntensity,
-          initialRotation.y - rotationIntensity
-        ],
-        rotateZ: [
-          initialRotation.z - 5,
-          initialRotation.z + 5,
-          initialRotation.z - 5
-        ],
-        y: [-floatIntensity, floatIntensity, -floatIntensity],
+        rotateX: initialRotation.x,
+        rotateY: initialRotation.y,
+        rotateZ: initialRotation.z,
+        y: 0,
       }}
-      transition={{
-        duration: 8,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
+      transition={{ duration: 0 }}
     >
       <div className="relative w-full h-full">
         {/* Shadow */}
-        <motion.div
-          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-4/5 h-4 bg-black/10 rounded-[100%] blur-xl"
-          animate={{
-            scale: [0.8, 1.2, 0.8],
-            opacity: [0.1, 0.2, 0.1],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-4/5 h-4 bg-black/10 rounded-[100%] blur-xl opacity-20" />
+
 
         {/* Food Image with 3D look */}
         <div className="w-full h-full rounded-full overflow-hidden shadow-2xl border-4 border-white/10 backdrop-blur-sm">

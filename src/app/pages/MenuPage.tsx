@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CheckCircle2 
+  ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CheckCircle2,
+  Truck, UtensilsCrossed, PackageOpen, MapPin, Phone, MessageSquare, Clock
 } from 'lucide-react';
 import { mockDb, MenuItem, Order, UserProfile } from '../utils/mockDb';
 
@@ -9,6 +10,8 @@ interface MenuPageProps {
   currentUser: UserProfile | null;
   onOpenAuth: () => void;
 }
+
+const DELIVERY_FEE = 4.99;
 
 export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [menu, setMenu] = useState<MenuItem[]>([]);
@@ -19,9 +22,14 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
     mockDb.setCart(cart);
   }, [cart]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [orderType, setOrderType] = useState<'dine-in' | 'takeaway'>('dine-in');
+  const [orderType, setOrderType] = useState<'dine-in' | 'takeaway' | 'delivery'>('dine-in');
   const [tableNumber, setTableNumber] = useState('');
   const [orderSuccess, setOrderSuccess] = useState<Order | null>(null);
+
+  // Delivery form fields
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryPhone, setDeliveryPhone] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   useEffect(() => {
     setMenu(mockDb.getMenu());
@@ -57,7 +65,8 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
     });
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
+  const cartTotal = orderType === 'delivery' ? cartSubtotal + DELIVERY_FEE : cartSubtotal;
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +79,14 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
       alert('Please enter a table number for Dine-In orders.');
       return;
     }
+    if (orderType === 'delivery' && !deliveryAddress.trim()) {
+      alert('Please enter a delivery address.');
+      return;
+    }
+    if (orderType === 'delivery' && !deliveryPhone.trim()) {
+      alert('Please enter a contact phone number for delivery.');
+      return;
+    }
 
     const order = mockDb.placeOrder({
       customerName: currentUser.fullName,
@@ -77,13 +94,26 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
       items: cart,
       total: cartTotal,
       type: orderType,
-      tableNumber: orderType === 'dine-in' ? tableNumber : undefined
+      tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
+      deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+      deliveryPhone: orderType === 'delivery' ? deliveryPhone : undefined,
+      deliveryNotes: orderType === 'delivery' ? deliveryNotes : undefined,
     });
 
     setOrderSuccess(order);
     setCart([]);
     setIsCartOpen(false);
+    setDeliveryAddress('');
+    setDeliveryPhone('');
+    setDeliveryNotes('');
+    setTableNumber('');
   };
+
+  const orderTypeOptions: { key: typeof orderType; label: string; icon: React.ElementType; desc: string }[] = [
+    { key: 'dine-in', label: 'Dine-In', icon: UtensilsCrossed, desc: 'Eat at restaurant' },
+    { key: 'takeaway', label: 'Takeaway', icon: PackageOpen, desc: 'Pick up yourself' },
+    { key: 'delivery', label: 'Delivery', icon: Truck, desc: 'Delivered to you' },
+  ];
 
   return (
     <div className="pt-[72px] min-h-screen pb-12">
@@ -94,6 +124,9 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
           <div className="text-center max-w-xl mx-auto mb-10">
             <span className="text-accent text-xs font-bold uppercase tracking-[0.2em] mb-2 block">Our Curated Selection</span>
             <h1 className="font-display text-3xl lg:text-4xl font-bold text-foreground">Explore Gourmet Delicacies</h1>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Order for dine-in, takeaway, or get it delivered fresh to your doorstep
+            </p>
             <div className="w-12 h-0.5 bg-accent/40 mx-auto mt-4" />
           </div>
 
@@ -103,7 +136,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 rounded-full text-xs font-semibold tracking-wider transition-all duration-300 ${
+                className={`px-5 py-2 rounded-full text-xs font-semibold tracking-wider transition-all duration-300 cursor-pointer ${
                   activeCategory === cat
                     ? 'bg-accent text-white shadow-md shadow-accent/20'
                     : 'bg-white hover:bg-secondary border border-border/30 text-muted-foreground hover:text-foreground'
@@ -218,7 +251,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed top-0 right-0 bottom-0 w-full max-w-[420px] bg-card border-l border-border/20 shadow-2xl z-[95] overflow-y-auto flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-full max-w-[440px] bg-card border-l border-border/20 shadow-2xl z-[95] overflow-y-auto flex flex-col"
             >
               {/* Header */}
               <div className="p-6 border-b border-border/20 flex items-center justify-between">
@@ -291,9 +324,27 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
               {/* Checkout Panel */}
               {cart.length > 0 && (
                 <div className="p-6 border-t border-border/20 bg-secondary/20 space-y-4">
-                  <div className="flex justify-between items-center text-sm font-bold text-foreground">
-                    <span>Total Amount</span>
-                    <span className="text-lg text-accent">${cartTotal.toFixed(2)}</span>
+                  {/* Order Type Selector — 3-column card style */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-foreground/80 mb-2 uppercase tracking-wider">How would you like your order?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {orderTypeOptions.map(opt => (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setOrderType(opt.key)}
+                          className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                            orderType === opt.key 
+                              ? 'bg-accent/10 border-accent/50 text-accent shadow-sm' 
+                              : 'bg-card border-border/25 text-muted-foreground hover:border-border/50 hover:text-foreground'
+                          }`}
+                        >
+                          <opt.icon className={`w-4.5 h-4.5 ${orderType === opt.key ? 'text-accent' : ''}`} />
+                          <span className="text-[10px] font-bold tracking-wider uppercase">{opt.label}</span>
+                          <span className="text-[8px] font-medium opacity-70">{opt.desc}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {!currentUser ? (
@@ -305,53 +356,133 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                     </button>
                   ) : (
                     <form onSubmit={handlePlaceOrder} className="space-y-3">
-                      <div>
-                        <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Order Type</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setOrderType('dine-in')}
-                            className={`py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border transition-all ${
-                              orderType === 'dine-in' 
-                                ? 'bg-accent/10 border-accent/40 text-accent' 
-                                : 'bg-card border-border/30 text-muted-foreground'
-                            }`}
+                      {/* Dine-In: Table Number */}
+                      <AnimatePresence mode="wait">
+                        {orderType === 'dine-in' && (
+                          <motion.div
+                            key="dine-in-fields"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
                           >
-                            Dine-In
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setOrderType('takeaway')}
-                            className={`py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border transition-all ${
-                              orderType === 'takeaway' 
-                                ? 'bg-accent/10 border-accent/40 text-accent' 
-                                : 'bg-card border-border/30 text-muted-foreground'
-                            }`}
+                            <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Table Number</label>
+                            <input 
+                              type="text" 
+                              required
+                              placeholder="e.g. 5"
+                              value={tableNumber} 
+                              onChange={e => setTableNumber(e.target.value)} 
+                              className="w-full px-3 py-1.5 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent"
+                            />
+                          </motion.div>
+                        )}
+
+                        {/* Delivery: Address Form */}
+                        {orderType === 'delivery' && (
+                          <motion.div
+                            key="delivery-fields"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-3"
                           >
-                            Takeaway
-                          </button>
+                            {/* Delivery info banner */}
+                            <div className="flex items-center gap-2 p-2.5 bg-accent/6 border border-accent/15 rounded-xl">
+                              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                                <Truck className="w-4 h-4 text-accent" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-foreground">Free delivery on orders over $30!</p>
+                                <p className="text-[9px] text-muted-foreground">Estimated delivery: 30-45 minutes</p>
+                              </div>
+                            </div>
+
+                            {/* Address */}
+                            <div>
+                              <label className="flex items-center gap-1 text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">
+                                <MapPin className="w-3 h-3" /> Delivery Address
+                              </label>
+                              <input 
+                                type="text" 
+                                required
+                                placeholder="Street address, apartment, building..."
+                                value={deliveryAddress} 
+                                onChange={e => setDeliveryAddress(e.target.value)} 
+                                className="w-full px-3 py-2 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent transition-colors"
+                              />
+                            </div>
+
+                            {/* Phone */}
+                            <div>
+                              <label className="flex items-center gap-1 text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">
+                                <Phone className="w-3 h-3" /> Contact Phone
+                              </label>
+                              <input 
+                                type="tel" 
+                                required
+                                placeholder="+1 (555) 123-4567"
+                                value={deliveryPhone} 
+                                onChange={e => setDeliveryPhone(e.target.value)} 
+                                className="w-full px-3 py-2 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent transition-colors"
+                              />
+                            </div>
+
+                            {/* Special Instructions */}
+                            <div>
+                              <label className="flex items-center gap-1 text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">
+                                <MessageSquare className="w-3 h-3" /> Special Instructions
+                                <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+                              </label>
+                              <textarea
+                                placeholder="Ring the doorbell, leave at door, extra napkins..."
+                                value={deliveryNotes}
+                                onChange={e => setDeliveryNotes(e.target.value)}
+                                rows={2}
+                                className="w-full px-3 py-2 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent transition-colors resize-none"
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Order Summary */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between items-center text-xs text-foreground/80">
+                          <span>Subtotal</span>
+                          <span className="font-semibold">${cartSubtotal.toFixed(2)}</span>
+                        </div>
+                        {orderType === 'delivery' && (
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-foreground/80 flex items-center gap-1">
+                              <Truck className="w-3 h-3" /> Delivery Fee
+                            </span>
+                            {cartSubtotal >= 30 ? (
+                              <span className="font-semibold text-emerald-600">
+                                <span className="line-through text-muted-foreground mr-1">${DELIVERY_FEE.toFixed(2)}</span>
+                                FREE
+                              </span>
+                            ) : (
+                              <span className="font-semibold text-foreground/80">${DELIVERY_FEE.toFixed(2)}</span>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center text-sm font-bold text-foreground border-t border-border/20 pt-2">
+                          <span>Total</span>
+                          <span className="text-lg text-accent">
+                            ${(orderType === 'delivery' && cartSubtotal >= 30 ? cartSubtotal : cartTotal).toFixed(2)}
+                          </span>
                         </div>
                       </div>
 
-                      {orderType === 'dine-in' && (
-                        <div>
-                          <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Table Number</label>
-                          <input 
-                            type="text" 
-                            required
-                            placeholder="e.g. 5"
-                            value={tableNumber} 
-                            onChange={e => setTableNumber(e.target.value)} 
-                            className="w-full px-3 py-1.5 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent"
-                          />
-                        </div>
-                      )}
-
                       <button
                         type="submit"
-                        className="w-full py-2.5 rounded-xl bg-accent text-white text-xs font-bold uppercase tracking-wider hover:shadow-lg hover:bg-accent/90 transition-all cursor-pointer"
+                        className="w-full py-2.5 rounded-xl bg-accent text-white text-xs font-bold uppercase tracking-wider hover:shadow-lg hover:bg-accent/90 transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
-                        Place Order (${cartTotal.toFixed(2)})
+                        {orderType === 'delivery' && <Truck className="w-3.5 h-3.5" />}
+                        {orderType === 'delivery' ? 'Place Delivery Order' : `Place Order`}
+                        {' '}(${(orderType === 'delivery' && cartSubtotal >= 30 ? cartSubtotal : cartTotal).toFixed(2)})
                       </button>
                     </form>
                   )}
@@ -370,20 +501,53 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="bg-card border border-border/30 rounded-2xl w-full max-w-[380px] p-6 text-center shadow-2xl space-y-4"
+              className="bg-card border border-border/30 rounded-2xl w-full max-w-[400px] p-6 text-center shadow-2xl space-y-4"
             >
-              <div className="w-14 h-14 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto border border-green-500/20">
-                <CheckCircle2 className="w-7 h-7" />
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto border ${
+                orderSuccess.type === 'delivery' 
+                  ? 'bg-accent/10 text-accent border-accent/20'
+                  : 'bg-green-500/10 text-green-500 border-green-500/20'
+              }`}>
+                {orderSuccess.type === 'delivery' 
+                  ? <Truck className="w-7 h-7" />
+                  : <CheckCircle2 className="w-7 h-7" />
+                }
               </div>
               <div>
-                <h3 className="font-display text-lg font-bold text-foreground">Order Successfully Placed</h3>
-                <p className="text-xs text-muted-foreground mt-1">Thank you! Your order has been sent to the kitchen.</p>
+                <h3 className="font-display text-lg font-bold text-foreground">
+                  {orderSuccess.type === 'delivery' ? 'Delivery Order Placed!' : 'Order Successfully Placed'}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {orderSuccess.type === 'delivery'
+                    ? 'Your food is being prepared and will be delivered to your address.'
+                    : 'Thank you! Your order has been sent to the kitchen.'}
+                </p>
               </div>
               <div className="bg-secondary/70 rounded-xl p-4 text-left text-xs space-y-1.5 border border-border/20">
                 <div className="flex justify-between"><span className="text-muted-foreground">Order ID:</span> <span className="font-mono font-bold text-foreground">{orderSuccess.id}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Type:</span> <span className="font-semibold text-foreground uppercase">{orderSuccess.type}</span></div>
                 {orderSuccess.tableNumber && (
                   <div className="flex justify-between"><span className="text-muted-foreground">Table:</span> <span className="font-semibold text-foreground">Table {orderSuccess.tableNumber}</span></div>
+                )}
+                {orderSuccess.deliveryAddress && (
+                  <>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground shrink-0">Deliver to:</span>
+                      <span className="font-semibold text-foreground text-right">{orderSuccess.deliveryAddress}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Phone:</span>
+                      <span className="font-semibold text-foreground">{orderSuccess.deliveryPhone}</span>
+                    </div>
+                  </>
+                )}
+                {orderSuccess.estimatedDelivery && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Est. Delivery:</span>
+                    <span className="font-bold text-accent">
+                      {new Date(orderSuccess.estimatedDelivery).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Amount:</span> <span className="font-bold text-accent">${orderSuccess.total.toFixed(2)}</span></div>
               </div>
