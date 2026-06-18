@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChefHat, Clock, AlertCircle, CheckCircle, Package, XCircle, ArrowRight } from 'lucide-react';
 import { mockDb, Order, OrderStatus } from '../utils/mockDb';
 
