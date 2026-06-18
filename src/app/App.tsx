@@ -15,7 +15,9 @@ import { KitchenPage } from "./pages/KitchenPage";
 import { AdminPage } from "./pages/AdminPage";
 import { BookTablePage } from "./pages/BookTablePage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { StaffAdminKitchenPage } from "./pages/StaffAdminKitchenPage";
 import { GoldenEmbersBackground } from "./components/GoldenEmbersBackground";
+
 
 const foodImages = [
   "https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnb3VybWV0JTIwc2FsbW9uJTIwZGlzaCUyMHBsYXRlZHxlbnwxfHx8fDE3Nzk2NzM1NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -392,16 +394,17 @@ export default function App() {
           <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
-          <Route 
-            path="/kitchen" 
+          <Route
+            path="/kitchen"
             element={
               currentUser && (currentUser.role === 'staff' || currentUser.role === 'admin') ? (
-                <KitchenPage />
+                <StaffAdminKitchenPage mode={currentUser.role === 'admin' ? 'admin' : 'staff'} />
               ) : (
                 <Navigate to="/" replace />
               )
-            } 
+            }
           />
+
           <Route 
             path="/admin" 
             element={
