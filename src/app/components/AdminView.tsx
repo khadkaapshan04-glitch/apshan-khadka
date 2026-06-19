@@ -7,7 +7,7 @@ import {
   Trophy, DollarSign, Calendar, ShoppingBag, Star, Plus, Edit3, Trash2, Check, X,
   Search, Eye, ShieldAlert, CheckCircle2, ChevronRight, Sliders
 } from 'lucide-react';
-import { mockDb, MenuItem, Order, Reservation } from '../utils/mockDb';
+import { mockDb, MenuItem, Order, Reservation, RestaurantTable } from '../utils/mockDb';
 
 export const AdminView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations'>('analytics');
@@ -16,6 +16,7 @@ export const AdminView: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [tables, setTables] = useState<RestaurantTable[]>([]);
   
   // CRUD states
   const [isEditing, setIsEditing] = useState<MenuItem | null>(null);
@@ -34,6 +35,7 @@ export const AdminView: React.FC = () => {
     setOrders(mockDb.getOrders());
     setMenu(mockDb.getMenu());
     setReservations(mockDb.getReservations());
+    setTables(mockDb.getTables());
   };
 
   useEffect(() => {
@@ -95,8 +97,18 @@ export const AdminView: React.FC = () => {
 
   // Reservation actions
   const handleConfirmReservation = (id: string) => {
-    const assignedTable = tableAssignment[id] || 'T-' + Math.floor(Math.random() * 12 + 1);
-    mockDb.updateReservationStatus(id, 'confirmed', assignedTable);
+    const reservation = reservations.find(r => r.id === id);
+    let tableId = tableAssignment[id];
+
+    // If tableId from assignment input is actually a table number or ID
+    if (tableId) {
+      const table = tables.find(t => t.id === tableId || t.number === tableId);
+      if (table) tableId = table.id;
+    } else if (reservation?.tableId) {
+      tableId = reservation.tableId;
+    }
+
+    mockDb.updateReservationStatus(id, 'confirmed', tableId);
     refreshData();
   };
 
@@ -505,13 +517,19 @@ export const AdminView: React.FC = () => {
                             Table {res.tableNumber}
                           </span>
                         ) : res.status === 'pending' ? (
-                          <input 
-                            type="text" 
-                            placeholder="e.g. T-4"
-                            value={tableAssignment[res.id] || ''}
-                            onChange={e => setTableAssignment({...tableAssignment, [res.id]: e.target.value})}
-                            className="w-16 px-2 py-1 rounded bg-secondary border border-border/30 text-[10px] focus:outline-none focus:border-accent"
-                          />
+                          <div className="flex flex-col gap-1">
+                            {res.tableNumber ? (
+                              <span className="font-medium text-foreground">Table {res.tableNumber} (Selected)</span>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Assign Table"
+                                value={tableAssignment[res.id] || ''}
+                                onChange={e => setTableAssignment({...tableAssignment, [res.id]: e.target.value})}
+                                className="w-24 px-2 py-1 rounded bg-secondary border border-border/30 text-[10px] focus:outline-none focus:border-accent"
+                              />
+                            )}
+                          </div>
                         ) : (
                           <span className="text-muted-foreground font-mono">-</span>
                         )}
