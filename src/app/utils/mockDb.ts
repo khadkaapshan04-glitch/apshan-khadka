@@ -164,23 +164,43 @@ const INITIAL_PROFILES: UserProfile[] = [
 
 // Setup localStorage with defaults
 const initDb = () => {
-  if (!localStorage.getItem('flavore_menu')) {
+  const safeGet = (key: string) => {
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      console.error(`Error parsing localStorage key "${key}":`, e);
+      return null;
+    }
+  };
+
+  const menu = safeGet('flavore_menu');
+  if (!menu || !Array.isArray(menu)) {
     localStorage.setItem('flavore_menu', JSON.stringify(INITIAL_MENU));
   }
-  if (!localStorage.getItem('flavore_profiles')) {
+
+  const profiles = safeGet('flavore_profiles');
+  if (!profiles || !Array.isArray(profiles)) {
     localStorage.setItem('flavore_profiles', JSON.stringify(INITIAL_PROFILES));
   }
-  if (!localStorage.getItem('flavore_orders')) {
+
+  const orders = safeGet('flavore_orders');
+  if (!orders || !Array.isArray(orders)) {
     localStorage.setItem('flavore_orders', JSON.stringify([]));
   }
-  if (!localStorage.getItem('flavore_reservations')) {
+
+  const reservations = safeGet('flavore_reservations');
+  if (!reservations || !Array.isArray(reservations)) {
     localStorage.setItem('flavore_reservations', JSON.stringify([]));
   }
-  const tables = localStorage.getItem('flavore_tables');
-  if (!tables || JSON.parse(tables).length === 0) {
+
+  const tables = safeGet('flavore_tables');
+  if (!tables || !Array.isArray(tables) || tables.length === 0) {
     localStorage.setItem('flavore_tables', JSON.stringify(INITIAL_TABLES));
   }
-  if (!localStorage.getItem('flavore_cart')) {
+
+  const cart = safeGet('flavore_cart');
+  if (!cart || !Array.isArray(cart)) {
     localStorage.setItem('flavore_cart', JSON.stringify([]));
   }
 };

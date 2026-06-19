@@ -84,6 +84,17 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
     setSelectedTableId(null);
   };
 
+  if (!allTables || allTables.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center animate-pulse">
+          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Loading Seating Layout...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-12 pt-[72px] relative overflow-hidden">
       {/* Background 3D Elements */}

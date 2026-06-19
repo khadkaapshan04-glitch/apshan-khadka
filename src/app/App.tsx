@@ -70,9 +70,10 @@ export default function App() {
       navigate('/admin');
     } else if (user.role === 'staff') {
       navigate('/kitchen');
-    } else {
+    } else if (location.pathname === '/') {
       navigate('/');
     }
+    setIsAuthOpen(false);
   };
 
   const handleLogout = () => {
