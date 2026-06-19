@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2 } from 'lucide-react';
-import { mockDb, Reservation, UserProfile } from '../utils/mockDb';
+import { mockDb, Reservation, UserProfile, RestaurantTable } from '../utils/mockDb';
 import { FloatingFood3D } from '../components/FloatingFood3D';
+import { TableLayout } from '../components/TableLayout';
 
 interface BookTablePageProps {
   currentUser: UserProfile | null;
@@ -15,9 +16,30 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
   const [resEmail, setResEmail] = useState(currentUser?.email || '');
   const [resPhone, setResPhone] = useState('');
   const [resGuests, setResGuests] = useState(2);
-  const [resDate, setResDate] = useState('');
+  const [resDate, setResDate] = useState(new Date().toISOString().split('T')[0]);
   const [resTime, setResTime] = useState('18:00');
   const [resSuccess, setResSuccess] = useState<Reservation | null>(null);
+
+  // Table Selection States
+  const [allTables, setAllTables] = useState<RestaurantTable[]>([]);
+  const [availableTableIds, setAvailableTableIds] = useState<string[]>([]);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAllTables(mockDb.getTables());
+  }, []);
+
+  useEffect(() => {
+    if (resDate && resTime && resGuests) {
+      const available = mockDb.getAvailableTables(resDate, resTime, resGuests);
+      setAvailableTableIds(available.map(t => t.id));
+
+      // If previously selected table is no longer available, deselect it
+      if (selectedTableId && !available.some(t => t.id === selectedTableId)) {
+        setSelectedTableId(null);
+      }
+    }
+  }, [resDate, resTime, resGuests, selectedTableId]);
 
   useEffect(() => {
     if (currentUser) {
@@ -37,20 +59,29 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
       return;
     }
 
+    if (!selectedTableId) {
+      alert('Please select an available table from the layout.');
+      return;
+    }
+
     const reservation = mockDb.createReservation({
       name: resName,
       email: resEmail,
       phone: resPhone,
       guests: resGuests,
       date: resDate,
-      time: resTime
+      time: resTime,
+      tableId: selectedTableId,
+      durationHours: 2,
+      status: 'pending'
     });
 
-    setResSuccess(reservation);
+    setResSuccess(mockDb.getReservations().find(r => r.id === reservation.id) || reservation);
     setResPhone('');
     setResGuests(2);
-    setResDate('');
+    setResDate(new Date().toISOString().split('T')[0]);
     setResTime('18:00');
+    setSelectedTableId(null);
   };
 
   return (
@@ -203,14 +234,31 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                   </div>
                 </div>
 
-                <div className="text-center pt-2">
-                  <button
-                    type="submit"
-                    disabled={!currentUser}
-                    className="px-8 py-3 bg-accent text-white text-xs font-bold tracking-wider uppercase rounded-full hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent/90 transition-all cursor-pointer"
-                  >
-                    Confirm Table Booking
-                  </button>
+                <div className="space-y-6">
+                  <div className="pt-4 border-t border-border/10">
+                    <h3 className="text-sm font-bold text-foreground mb-6 flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px]">4</span>
+                      Select Your Table
+                    </h3>
+
+                    <TableLayout
+                      tables={allTables}
+                      availableTableIds={availableTableIds}
+                      selectedTableId={selectedTableId}
+                      onSelectTable={setSelectedTableId}
+                      guestCount={resGuests}
+                    />
+                  </div>
+
+                  <div className="text-center pt-6 border-t border-border/10">
+                    <button
+                      type="submit"
+                      disabled={!currentUser || !selectedTableId}
+                      className="px-8 py-3 bg-accent text-white text-xs font-bold tracking-wider uppercase rounded-full hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent/90 transition-all cursor-pointer"
+                    >
+                      {selectedTableId ? 'Confirm Table Booking' : 'Select a Table to Continue'}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}

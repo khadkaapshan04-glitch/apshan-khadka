@@ -34,6 +34,14 @@ export interface Order {
   created_at: string;
 }
 
+export interface RestaurantTable {
+  id: string;
+  number: string;
+  capacity: number;
+  type: 'booth' | 'standard' | 'outdoor';
+  position: { x: number; y: number }; // Percentage based for layout
+}
+
 export interface Reservation {
   id: string;
   name: string;
@@ -41,8 +49,10 @@ export interface Reservation {
   phone: string;
   date: string;
   time: string;
+  durationHours: number;
   guests: number;
   status: 'pending' | 'confirmed' | 'cancelled';
+  tableId?: string;
   tableNumber?: string;
   created_at: string;
 }
@@ -52,6 +62,22 @@ export interface UserProfile {
   fullName: string;
   role: 'customer' | 'staff' | 'admin';
 }
+
+// Initial Table Data
+const INITIAL_TABLES: RestaurantTable[] = [
+  { id: 't1', number: '1', capacity: 2, type: 'standard', position: { x: 20, y: 20 } },
+  { id: 't2', number: '2', capacity: 2, type: 'standard', position: { x: 40, y: 20 } },
+  { id: 't3', number: '3', capacity: 4, type: 'booth', position: { x: 60, y: 20 } },
+  { id: 't4', number: '4', capacity: 4, type: 'booth', position: { x: 80, y: 20 } },
+  { id: 't5', number: '5', capacity: 6, type: 'standard', position: { x: 20, y: 50 } },
+  { id: 't6', number: '6', capacity: 4, type: 'standard', position: { x: 40, y: 50 } },
+  { id: 't7', number: '7', capacity: 2, type: 'standard', position: { x: 60, y: 50 } },
+  { id: 't8', number: '8', capacity: 2, type: 'standard', position: { x: 80, y: 50 } },
+  { id: 't9', number: '9', capacity: 8, type: 'booth', position: { x: 20, y: 80 } },
+  { id: 't10', number: '10', capacity: 4, type: 'standard', position: { x: 50, y: 80 } },
+  { id: 't11', number: '11', capacity: 2, type: 'outdoor', position: { x: 80, y: 80 } },
+  { id: 't12', number: '12', capacity: 2, type: 'outdoor', position: { x: 90, y: 80 } },
+];
 
 // Initial Menu Data
 const INITIAL_MENU: MenuItem[] = [
@@ -150,6 +176,9 @@ const initDb = () => {
   if (!localStorage.getItem('flavore_reservations')) {
     localStorage.setItem('flavore_reservations', JSON.stringify([]));
   }
+  if (!localStorage.getItem('flavore_tables')) {
+    localStorage.setItem('flavore_tables', JSON.stringify(INITIAL_TABLES));
+  }
   if (!localStorage.getItem('flavore_cart')) {
     localStorage.setItem('flavore_cart', JSON.stringify([]));
   }
@@ -243,6 +272,21 @@ export const mockDb = {
     return null;
   },
 
+  updateReservation: (id: string, updates: Partial<Reservation>): Reservation | null => {
+    const reservations = mockDb.getReservations();
+    const index = reservations.findIndex(r => r.id === id);
+    if (index > -1) {
+      reservations[index] = { ...reservations[index], ...updates };
+      if (updates.tableId) {
+        const table = mockDb.getTables().find(t => t.id === updates.tableId);
+        if (table) reservations[index].tableNumber = table.number;
+      }
+      localStorage.setItem('flavore_reservations', JSON.stringify(reservations));
+      return reservations[index];
+    }
+    return null;
+  },
+
   // --- Reservation Services ---
   getReservations: (): Reservation[] => {
     return JSON.parse(localStorage.getItem('flavore_reservations') || '[]');
@@ -250,8 +294,16 @@ export const mockDb = {
 
   createReservation: (resData: Omit<Reservation, 'id' | 'status' | 'created_at'>): Reservation => {
     const reservations = mockDb.getReservations();
+    let tableNumber = resData.tableNumber;
+
+    if (resData.tableId && !tableNumber) {
+      const table = mockDb.getTables().find(t => t.id === resData.tableId);
+      if (table) tableNumber = table.number;
+    }
+
     const newRes: Reservation = {
       ...resData,
+      tableNumber,
       id: 'res_' + Math.random().toString(36).substr(2, 9),
       status: 'pending',
       created_at: new Date().toISOString()
@@ -261,16 +313,53 @@ export const mockDb = {
     return newRes;
   },
 
-  updateReservationStatus: (id: string, status: 'pending' | 'confirmed' | 'cancelled', tableNumber?: string): Reservation | null => {
+  updateReservationStatus: (id: string, status: 'pending' | 'confirmed' | 'cancelled', tableId?: string): Reservation | null => {
     const reservations = mockDb.getReservations();
+    const tables = mockDb.getTables();
     const index = reservations.findIndex(r => r.id === id);
     if (index > -1) {
       reservations[index].status = status;
-      if (tableNumber) reservations[index].tableNumber = tableNumber;
+      if (tableId) {
+        reservations[index].tableId = tableId;
+        const table = tables.find(t => t.id === tableId);
+        if (table) reservations[index].tableNumber = table.number;
+      }
       localStorage.setItem('flavore_reservations', JSON.stringify(reservations));
       return reservations[index];
     }
     return null;
+  },
+
+  // --- Table Services ---
+  getTables: (): RestaurantTable[] => {
+    return JSON.parse(localStorage.getItem('flavore_tables') || '[]');
+  },
+
+  getAvailableTables: (date: string, time: string, guests: number): RestaurantTable[] => {
+    const tables = mockDb.getTables();
+    const reservations = mockDb.getReservations();
+
+    // Filter tables by capacity
+    const suitableTables = tables.filter(t => t.capacity >= guests);
+
+    // Filter out reserved tables for the given date and time
+    // For simplicity, we assume a reservation lasts 2 hours
+    const resStart = new Date(`${date}T${time}`);
+    const resEnd = new Date(resStart.getTime() + 2 * 60 * 60 * 1000);
+
+    const availableTables = suitableTables.filter(table => {
+      const isReserved = reservations.some(res => {
+        if (res.status === 'cancelled' || res.tableId !== table.id || res.date !== date) return false;
+
+        const existingStart = new Date(`${res.date}T${res.time}`);
+        const existingEnd = new Date(existingStart.getTime() + (res.durationHours || 2) * 60 * 60 * 1000);
+
+        return (resStart < existingEnd && resEnd > existingStart);
+      });
+      return !isReserved;
+    });
+
+    return availableTables;
   },
 
   // --- Cart Services ---
