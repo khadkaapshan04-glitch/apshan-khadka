@@ -336,8 +336,8 @@ export function StaffAdminKitchenView({ mode }: { mode: KitchenCardMode }) {
                     <span
                       className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${
                         order.status === 'delivered'
-                          ? 'bg-green-50 text-green-700 border border-green-150'
-                          : 'bg-red-50 text-red-700 border border-red-150'
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-red-50 text-red-700 border border-red-200'
                       }`}
                     >
                       {order.status}

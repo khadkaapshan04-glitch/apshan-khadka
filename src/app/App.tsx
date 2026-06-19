@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
 import {
-  User, UserPlus, ChefHat, Calendar, Truck, LogOut,
-  Headphones, Users, Award, Trophy, Star, Heart, Shield, ShoppingCart, ArrowLeft
+  User, UserPlus, ChefHat, LogOut, Shield, ArrowLeft
 } from "lucide-react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import uploadedFoodImg from "../imports/Minimalistic_simple_food_design_202605251743-1.jpeg";
-import { ImageWithFallback } from "./components/figma/ImageWithFallback";
+
 import { mockDb, UserProfile } from "./utils/mockDb";
 import { AuthModal } from "./components/AuthModal";
 import { HomePage } from "./pages/HomePage";
 import { MenuPage } from "./pages/MenuPage";
-import { KitchenPage } from "./pages/KitchenPage";
+
 import { AdminPage } from "./pages/AdminPage";
 import { BookTablePage } from "./pages/BookTablePage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -19,31 +17,22 @@ import { StaffAdminKitchenPage } from "./pages/StaffAdminKitchenPage";
 import { GoldenEmbersBackground } from "./components/GoldenEmbersBackground";
 
 
-const foodImages = [
-  "https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnb3VybWV0JTIwc2FsbW9uJTIwZGlzaCUyMHBsYXRlZHxlbnwxfHx8fDE3Nzk2NzM1NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  uploadedFoodImg,
-  "https://images.unsplash.com/photo-1663530761401-15eefb544889?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnb3VybWV0JTIwcGxhdGVkJTIwZGlzaHxlbnwxfHx8fDE3Nzk3MTA1NDB8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1673912402587-57ac40f1b4a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwbGF0ZWQlMjBkZXNzZXJ0fGVufDF8fHx8MTc3OTcxMDU2MXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-];
+
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const { scrollY } = useScroll();
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
-  const heroScale  = useTransform(scrollY, [0, 300], [1, 0.96]);
+
 
   // App Navigation & Role States
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  const userOrdersTrackable = () => {
-    if (!currentUser) return false;
-    return mockDb.getOrders().some(o => o.customerEmail.toLowerCase() === currentUser.email.toLowerCase());
-  };
+
 
   useEffect(() => {
     // Check for logged in user session
@@ -56,12 +45,7 @@ export default function App() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % foodImages.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+
 
   const handleLoginSuccess = (user: UserProfile) => {
     setCurrentUser(user);
@@ -70,9 +54,10 @@ export default function App() {
       navigate('/admin');
     } else if (user.role === 'staff') {
       navigate('/kitchen');
-    } else {
+    } else if (location.pathname === '/') {
       navigate('/');
     }
+    setIsAuthOpen(false);
   };
 
   const handleLogout = () => {
@@ -81,29 +66,7 @@ export default function App() {
     navigate('/');
   };
 
-  const stagger = {
-    hidden:  { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
-  };
-  
-  const fadeUp = {
-    hidden:  { opacity: 0, y: 22 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] } },
-  };
 
-  const features = [
-    { icon: ChefHat,    title: "Quality Food",  desc: "Fresh ingredients, perfectly cooked." },
-    { icon: Calendar,   title: "Easy Booking",  desc: "Reserve your table in just a few clicks." },
-    { icon: Truck,      title: "Fast Delivery", desc: "Delicious food delivered to you." },
-    { icon: Headphones, title: "24/7 Support",  desc: "We're here to help you anytime." },
-  ];
-
-  const stats = [
-    { icon: Users,  value: "10K+", label: "Happy Customers" },
-    { icon: Award,  value: "50+",  label: "Delicious Dishes" },
-    { icon: Trophy, value: "5+",   label: "Years of Service" },
-    { icon: Star,   value: "4.8",  label: "Customer Rating"  },
-  ];
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden pb-12 relative">
@@ -336,15 +299,6 @@ export default function App() {
                       setIsSidebarOpen(false);
                       if (item.path) {
                         navigate(item.path);
-                      } else if (item.selector) {
-                        if (location.pathname !== '/') {
-                          navigate('/');
-                          setTimeout(() => {
-                            document.querySelector(item.selector!)?.scrollIntoView({ behavior: 'smooth' });
-                          }, 300);
-                        } else {
-                          document.querySelector(item.selector!)?.scrollIntoView({ behavior: 'smooth' });
-                        }
                       }
                     }}
                     className="w-full text-left block px-4 py-3 rounded-xl hover:bg-accent/5 hover:text-foreground font-semibold text-xs text-foreground/70 transition-all duration-200 cursor-pointer"

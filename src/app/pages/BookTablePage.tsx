@@ -71,9 +71,7 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
       guests: resGuests,
       date: resDate,
       time: resTime,
-      tableId: selectedTableId,
-      durationHours: 2,
-      status: 'pending'
+      tableId: selectedTableId
     });
 
     setResSuccess(mockDb.getReservations().find(r => r.id === reservation.id) || reservation);
@@ -83,6 +81,17 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
     setResTime('18:00');
     setSelectedTableId(null);
   };
+
+  if (!allTables || allTables.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center animate-pulse">
+          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Loading Seating Layout...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-12 pt-[72px] relative overflow-hidden">
@@ -160,7 +169,6 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                     <input 
                       type="text" 
                       required
-                      disabled={!currentUser}
                       value={resName} 
                       onChange={e => setResName(e.target.value)} 
                       placeholder="Your Name"
@@ -172,7 +180,6 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                     <input 
                       type="email" 
                       required
-                      disabled={!currentUser}
                       value={resEmail} 
                       onChange={e => setResEmail(e.target.value)} 
                       placeholder="name@example.com"
@@ -184,7 +191,6 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                     <input 
                       type="tel" 
                       required
-                      disabled={!currentUser}
                       value={resPhone} 
                       onChange={e => setResPhone(e.target.value)} 
                       placeholder="e.g. +1 (555) 123-4567"
@@ -197,7 +203,6 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                   <div>
                     <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Guests Count</label>
                     <select
-                      disabled={!currentUser}
                       value={resGuests}
                       onChange={e => setResGuests(Number(e.target.value))}
                       className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
@@ -212,7 +217,6 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                     <input 
                       type="date" 
                       required
-                      disabled={!currentUser}
                       value={resDate} 
                       onChange={e => setResDate(e.target.value)} 
                       min={new Date().toISOString().split('T')[0]}
@@ -222,7 +226,6 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                   <div>
                     <label className="block text-[11px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Preferred Time</label>
                     <select
-                      disabled={!currentUser}
                       value={resTime}
                       onChange={e => setResTime(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
@@ -253,10 +256,10 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                   <div className="text-center pt-6 border-t border-border/10">
                     <button
                       type="submit"
-                      disabled={!currentUser || !selectedTableId}
+                      disabled={!selectedTableId}
                       className="px-8 py-3 bg-accent text-white text-xs font-bold tracking-wider uppercase rounded-full hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent/90 transition-all cursor-pointer"
                     >
-                      {selectedTableId ? 'Confirm Table Booking' : 'Select a Table to Continue'}
+                      {!currentUser ? 'Login to Confirm' : (selectedTableId ? 'Confirm Table Booking' : 'Select a Table to Continue')}
                     </button>
                   </div>
                 </div>

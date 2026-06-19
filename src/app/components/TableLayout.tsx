@@ -50,6 +50,12 @@ export const TableLayout: React.FC<TableLayoutProps> = ({
           Kitchen
         </div>
 
+        {tables.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs font-semibold">
+            Loading restaurant layout...
+          </div>
+        )}
+
         {tables.map((table) => {
           const isSuitable = table.capacity >= guestCount;
           const isAvailable = availableTableIds.includes(table.id);
@@ -104,7 +110,7 @@ export const TableLayout: React.FC<TableLayoutProps> = ({
       <div className="bg-accent/5 border border-accent/20 rounded-2xl p-4 flex items-start gap-3">
         <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Please select an available table (green) from the layout above. Tables are automatically filtered based on your guest count. A standard reservation lasts for 2 hours.
+          Please select an available table (green) from the layout above. Tables are automatically filtered based on your guest count.
         </p>
       </div>
     </div>

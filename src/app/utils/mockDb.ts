@@ -49,7 +49,6 @@ export interface Reservation {
   phone: string;
   date: string;
   time: string;
-  durationHours: number;
   guests: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   tableId?: string;
@@ -62,6 +61,19 @@ export interface UserProfile {
   fullName: string;
   role: 'customer' | 'staff' | 'admin';
 }
+
+const inMemoryStorage: Record<string, string> = {};
+const StorageWrapper = {
+  getItem: (key: string): string | null => {
+    try { return window.localStorage.getItem(key); } catch { return inMemoryStorage[key] || null; }
+  },
+  setItem: (key: string, value: string): void => {
+    try { window.localStorage.setItem(key, value); } catch { inMemoryStorage[key] = value; }
+  },
+  removeItem: (key: string): void => {
+    try { window.localStorage.removeItem(key); } catch { delete inMemoryStorage[key]; }
+  }
+};
 
 // Initial Table Data
 const INITIAL_TABLES: RestaurantTable[] = [
@@ -164,23 +176,44 @@ const INITIAL_PROFILES: UserProfile[] = [
 
 // Setup localStorage with defaults
 const initDb = () => {
-  if (!localStorage.getItem('flavore_menu')) {
-    localStorage.setItem('flavore_menu', JSON.stringify(INITIAL_MENU));
+  const safeGet = (key: string) => {
+    try {
+      const data = StorageWrapper.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      console.error(`Error parsing localStorage key "${key}":`, e);
+      return null;
+    }
+  };
+
+  const menu = safeGet('flavore_menu');
+  if (!menu || !Array.isArray(menu)) {
+    StorageWrapper.setItem('flavore_menu', JSON.stringify(INITIAL_MENU));
   }
-  if (!localStorage.getItem('flavore_profiles')) {
-    localStorage.setItem('flavore_profiles', JSON.stringify(INITIAL_PROFILES));
+
+  const profiles = safeGet('flavore_profiles');
+  if (!profiles || !Array.isArray(profiles)) {
+    StorageWrapper.setItem('flavore_profiles', JSON.stringify(INITIAL_PROFILES));
   }
-  if (!localStorage.getItem('flavore_orders')) {
-    localStorage.setItem('flavore_orders', JSON.stringify([]));
+
+  const orders = safeGet('flavore_orders');
+  if (!orders || !Array.isArray(orders)) {
+    StorageWrapper.setItem('flavore_orders', JSON.stringify([]));
   }
-  if (!localStorage.getItem('flavore_reservations')) {
-    localStorage.setItem('flavore_reservations', JSON.stringify([]));
+
+  const reservations = safeGet('flavore_reservations');
+  if (!reservations || !Array.isArray(reservations)) {
+    StorageWrapper.setItem('flavore_reservations', JSON.stringify([]));
   }
-  if (!localStorage.getItem('flavore_tables')) {
-    localStorage.setItem('flavore_tables', JSON.stringify(INITIAL_TABLES));
+
+  const tables = safeGet('flavore_tables');
+  if (!tables || !Array.isArray(tables) || tables.length === 0) {
+    StorageWrapper.setItem('flavore_tables', JSON.stringify(INITIAL_TABLES));
   }
-  if (!localStorage.getItem('flavore_cart')) {
-    localStorage.setItem('flavore_cart', JSON.stringify([]));
+
+  const cart = safeGet('flavore_cart');
+  if (!cart || !Array.isArray(cart)) {
+    StorageWrapper.setItem('flavore_cart', JSON.stringify([]));
   }
 };
 
@@ -190,15 +223,15 @@ initDb();
 export const mockDb = {
   // --- Auth Service ---
   getCurrentUser: (): UserProfile | null => {
-    const userStr = localStorage.getItem('flavore_current_user');
+    const userStr = StorageWrapper.getItem('flavore_current_user');
     return userStr ? JSON.parse(userStr) : null;
   },
 
   login: (email: string): UserProfile | null => {
-    const profiles: UserProfile[] = JSON.parse(localStorage.getItem('flavore_profiles') || '[]');
+    const profiles: UserProfile[] = JSON.parse(StorageWrapper.getItem('flavore_profiles') || '[]');
     const user = profiles.find(p => p.email.toLowerCase() === email.toLowerCase());
     if (user) {
-      localStorage.setItem('flavore_current_user', JSON.stringify(user));
+      StorageWrapper.setItem('flavore_current_user', JSON.stringify(user));
       return user;
     }
     // Fallback automatic sign up as customer for unknown emails for easy testing
@@ -208,18 +241,18 @@ export const mockDb = {
       role: 'customer'
     };
     profiles.push(newUser);
-    localStorage.setItem('flavore_profiles', JSON.stringify(profiles));
-    localStorage.setItem('flavore_current_user', JSON.stringify(newUser));
+    StorageWrapper.setItem('flavore_profiles', JSON.stringify(profiles));
+    StorageWrapper.setItem('flavore_current_user', JSON.stringify(newUser));
     return newUser;
   },
 
   logout: () => {
-    localStorage.removeItem('flavore_current_user');
+    StorageWrapper.removeItem('flavore_current_user');
   },
 
   // --- Menu CRUD ---
   getMenu: (): MenuItem[] => {
-    return JSON.parse(localStorage.getItem('flavore_menu') || '[]');
+    return JSON.parse(StorageWrapper.getItem('flavore_menu') || '[]');
   },
 
   saveMenuItem: (item: MenuItem) => {
@@ -230,18 +263,18 @@ export const mockDb = {
     } else {
       menu.push(item);
     }
-    localStorage.setItem('flavore_menu', JSON.stringify(menu));
+    StorageWrapper.setItem('flavore_menu', JSON.stringify(menu));
   },
 
   deleteMenuItem: (id: string) => {
     const menu = mockDb.getMenu();
     const updated = menu.filter(m => m.id !== id);
-    localStorage.setItem('flavore_menu', JSON.stringify(updated));
+    StorageWrapper.setItem('flavore_menu', JSON.stringify(updated));
   },
 
   // --- Order Services ---
   getOrders: (): Order[] => {
-    return JSON.parse(localStorage.getItem('flavore_orders') || '[]');
+    return JSON.parse(StorageWrapper.getItem('flavore_orders') || '[]');
   },
 
   placeOrder: (orderData: Omit<Order, 'id' | 'status' | 'created_at' | 'estimatedDelivery'>): Order => {
@@ -257,7 +290,7 @@ export const mockDb = {
       } : {})
     };
     orders.unshift(newOrder); // Add to beginning of array
-    localStorage.setItem('flavore_orders', JSON.stringify(orders));
+    StorageWrapper.setItem('flavore_orders', JSON.stringify(orders));
     return newOrder;
   },
 
@@ -266,7 +299,7 @@ export const mockDb = {
     const index = orders.findIndex(o => o.id === id);
     if (index > -1) {
       orders[index].status = status;
-      localStorage.setItem('flavore_orders', JSON.stringify(orders));
+      StorageWrapper.setItem('flavore_orders', JSON.stringify(orders));
       return orders[index];
     }
     return null;
@@ -281,7 +314,7 @@ export const mockDb = {
         const table = mockDb.getTables().find(t => t.id === updates.tableId);
         if (table) reservations[index].tableNumber = table.number;
       }
-      localStorage.setItem('flavore_reservations', JSON.stringify(reservations));
+      StorageWrapper.setItem('flavore_reservations', JSON.stringify(reservations));
       return reservations[index];
     }
     return null;
@@ -289,7 +322,7 @@ export const mockDb = {
 
   // --- Reservation Services ---
   getReservations: (): Reservation[] => {
-    return JSON.parse(localStorage.getItem('flavore_reservations') || '[]');
+    return JSON.parse(StorageWrapper.getItem('flavore_reservations') || '[]');
   },
 
   createReservation: (resData: Omit<Reservation, 'id' | 'status' | 'created_at'>): Reservation => {
@@ -309,7 +342,7 @@ export const mockDb = {
       created_at: new Date().toISOString()
     };
     reservations.unshift(newRes);
-    localStorage.setItem('flavore_reservations', JSON.stringify(reservations));
+    StorageWrapper.setItem('flavore_reservations', JSON.stringify(reservations));
     return newRes;
   },
 
@@ -324,7 +357,7 @@ export const mockDb = {
         const table = tables.find(t => t.id === tableId);
         if (table) reservations[index].tableNumber = table.number;
       }
-      localStorage.setItem('flavore_reservations', JSON.stringify(reservations));
+      StorageWrapper.setItem('flavore_reservations', JSON.stringify(reservations));
       return reservations[index];
     }
     return null;
@@ -332,7 +365,27 @@ export const mockDb = {
 
   // --- Table Services ---
   getTables: (): RestaurantTable[] => {
-    return JSON.parse(localStorage.getItem('flavore_tables') || '[]');
+    const data = StorageWrapper.getItem('flavore_tables');
+    if (!data) return INITIAL_TABLES;
+    const parsed = JSON.parse(data);
+    return parsed.length > 0 ? parsed : INITIAL_TABLES;
+  },
+
+  saveTable: (table: RestaurantTable) => {
+    const tables = mockDb.getTables();
+    const index = tables.findIndex(t => t.id === table.id);
+    if (index > -1) {
+      tables[index] = table;
+    } else {
+      tables.push(table);
+    }
+    StorageWrapper.setItem('flavore_tables', JSON.stringify(tables));
+  },
+
+  deleteTable: (id: string) => {
+    const tables = mockDb.getTables();
+    const updated = tables.filter(t => t.id !== id);
+    StorageWrapper.setItem('flavore_tables', JSON.stringify(updated));
   },
 
   getAvailableTables: (date: string, time: string, guests: number): RestaurantTable[] => {
@@ -342,19 +395,10 @@ export const mockDb = {
     // Filter tables by capacity
     const suitableTables = tables.filter(t => t.capacity >= guests);
 
-    // Filter out reserved tables for the given date and time
-    // For simplicity, we assume a reservation lasts 2 hours
-    const resStart = new Date(`${date}T${time}`);
-    const resEnd = new Date(resStart.getTime() + 2 * 60 * 60 * 1000);
-
+    // Filter out reserved tables for the given date
     const availableTables = suitableTables.filter(table => {
       const isReserved = reservations.some(res => {
-        if (res.status === 'cancelled' || res.tableId !== table.id || res.date !== date) return false;
-
-        const existingStart = new Date(`${res.date}T${res.time}`);
-        const existingEnd = new Date(existingStart.getTime() + (res.durationHours || 2) * 60 * 60 * 1000);
-
-        return (resStart < existingEnd && resEnd > existingStart);
+        return res.status !== 'cancelled' && res.tableId === table.id && res.date === date;
       });
       return !isReserved;
     });
@@ -364,11 +408,11 @@ export const mockDb = {
 
   // --- Cart Services ---
   getCart: (): { menuItem: MenuItem; quantity: number }[] => {
-    return JSON.parse(localStorage.getItem('flavore_cart') || '[]');
+    return JSON.parse(StorageWrapper.getItem('flavore_cart') || '[]');
   },
 
   setCart: (cart: { menuItem: MenuItem; quantity: number }[]) => {
-    localStorage.setItem('flavore_cart', JSON.stringify(cart));
+    StorageWrapper.setItem('flavore_cart', JSON.stringify(cart));
   }
 };
 
