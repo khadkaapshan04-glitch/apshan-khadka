@@ -10,7 +10,7 @@ import {
 import { mockDb, MenuItem, Order, Reservation, RestaurantTable } from '../utils/mockDb';
 
 export const AdminView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'tables'>('analytics');
   
   // States
   const [orders, setOrders] = useState<Order[]>([]);
@@ -21,6 +21,15 @@ export const AdminView: React.FC = () => {
   // CRUD states
   const [isEditing, setIsEditing] = useState<MenuItem | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Table CRUD states
+  const [isEditingTable, setIsEditingTable] = useState<RestaurantTable | null>(null);
+  const [isCreatingTable, setIsCreatingTable] = useState(false);
+  const [tableNum, setTableNum] = useState('');
+  const [tableCapacity, setTableCapacity] = useState(2);
+  const [tableType, setTableType] = useState<'booth' | 'standard' | 'outdoor'>('standard');
+  const [tablePosX, setTablePosX] = useState(50);
+  const [tablePosY, setTablePosY] = useState(50);
   const [crudName, setCrudName] = useState('');
   const [crudDesc, setCrudDesc] = useState('');
   const [crudPrice, setCrudPrice] = useState(0);
@@ -43,6 +52,53 @@ export const AdminView: React.FC = () => {
     const interval = setInterval(refreshData, 4000); // Poll database
     return () => clearInterval(interval);
   }, []);
+
+  // Table CRUD Operations
+  const handleOpenEditTable = (table: RestaurantTable) => {
+    setIsEditingTable(table);
+    setTableNum(table.number);
+    setTableCapacity(table.capacity);
+    setTableType(table.type);
+    setTablePosX(table.position.x);
+    setTablePosY(table.position.y);
+  };
+
+  const handleOpenCreateTable = () => {
+    setIsCreatingTable(true);
+    setTableNum((tables.length + 1).toString());
+    setTableCapacity(2);
+    setTableType('standard');
+    setTablePosX(50);
+    setTablePosY(50);
+  };
+
+  const handleSaveTable = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tableNum || tableCapacity <= 0) {
+      alert('Please fill out all required fields.');
+      return;
+    }
+
+    const savedTable: RestaurantTable = {
+      id: isEditingTable ? isEditingTable.id : 't_' + Math.random().toString(36).substr(2, 9),
+      number: tableNum,
+      capacity: Number(tableCapacity),
+      type: tableType,
+      position: { x: Number(tablePosX), y: Number(tablePosY) }
+    };
+
+    mockDb.saveTable(savedTable);
+    setIsEditingTable(null);
+    setIsCreatingTable(false);
+    refreshData();
+  };
+
+  const handleDeleteTable = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this table?')) {
+      mockDb.deleteTable(id);
+      refreshData();
+    }
+  };
 
   // CRUD Operations
   const handleOpenEdit = (item: MenuItem) => {
@@ -180,7 +236,8 @@ export const AdminView: React.FC = () => {
           {[
             { id: 'analytics', label: 'Overview' },
             { id: 'menu', label: 'Menu List' },
-            { id: 'reservations', label: 'Reservations' }
+            { id: 'reservations', label: 'Reservations' },
+            { id: 'tables', label: 'Tables' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -571,6 +628,165 @@ export const AdminView: React.FC = () => {
                       <td colSpan={6} className="text-center py-8 text-muted-foreground font-semibold">No bookings placed yet.</td>
                     </tr>
                   )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Tab 4: Table Management */}
+      {activeTab === 'tables' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="flex justify-between items-center bg-secondary/30 p-4 rounded-2xl border border-border/10">
+            <div className="text-xs text-muted-foreground font-semibold">Total: {tables.length} Tables</div>
+            <button
+              onClick={handleOpenCreateTable}
+              className="px-4 py-2 bg-accent hover:bg-accent/90 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:shadow-md cursor-pointer transition-all"
+            >
+              <Plus className="w-4 h-4" /> Add New Table
+            </button>
+          </div>
+
+          {/* Form Modal for Table Creating/Editing */}
+          <AnimatePresence>
+            {(isEditingTable || isCreatingTable) && (
+              <div className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="bg-card border border-border/30 rounded-2xl w-full max-w-[500px] p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto"
+                >
+                  <button
+                    onClick={() => { setIsEditingTable(null); setIsCreatingTable(false); }}
+                    className="absolute top-4 right-4 text-muted-foreground hover:text-foreground hover:bg-secondary p-1.5 rounded-lg transition-all"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <h3 className="font-display text-xl font-bold text-foreground">
+                    {isEditingTable ? `Edit Table: ${isEditingTable.number}` : 'Add New Table'}
+                  </h3>
+
+                  <form onSubmit={handleSaveTable} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Table Number *</label>
+                        <input
+                          type="text" required value={tableNum} onChange={e => setTableNum(e.target.value)}
+                          placeholder="e.g. 1" className="w-full px-3.5 py-2 rounded-xl bg-secondary border border-border/30 text-xs focus:outline-none focus:border-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Capacity *</label>
+                        <input
+                          type="number" required value={tableCapacity} onChange={e => setTableCapacity(Number(e.target.value))}
+                          placeholder="2" className="w-full px-3.5 py-2 rounded-xl bg-secondary border border-border/30 text-xs focus:outline-none focus:border-accent"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Table Type</label>
+                      <select
+                        value={tableType} onChange={e => setTableType(e.target.value as any)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-secondary border border-border/30 text-xs focus:outline-none focus:border-accent"
+                      >
+                        <option value="standard">Standard</option>
+                        <option value="booth">Booth</option>
+                        <option value="outdoor">Outdoor</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">X Position (%)</label>
+                        <input
+                          type="range" min="0" max="100" value={tablePosX} onChange={e => setTablePosX(Number(e.target.value))}
+                          className="w-full accent-accent"
+                        />
+                        <div className="text-[10px] text-center mt-1 font-mono">{tablePosX}%</div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Y Position (%)</label>
+                        <input
+                          type="range" min="0" max="100" value={tablePosY} onChange={e => setTablePosY(Number(e.target.value))}
+                          className="w-full accent-accent"
+                        />
+                        <div className="text-[10px] text-center mt-1 font-mono">{tablePosY}%</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => { setIsEditingTable(null); setIsCreatingTable(false); }}
+                        className="flex-1 py-2.5 rounded-xl border border-border/30 hover:bg-secondary text-xs font-semibold transition-all cursor-pointer text-center"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-2.5 rounded-xl bg-accent text-white text-xs font-semibold hover:shadow-md cursor-pointer hover:bg-accent/90 transition-all text-center"
+                      >
+                        Save Table
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Tables List */}
+          <div className="bg-card border border-border/20 rounded-2xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px] text-left">
+                <thead>
+                  <tr className="border-b border-border/20 bg-secondary/30 text-muted-foreground uppercase font-bold tracking-wider">
+                    <th className="p-4">Table #</th>
+                    <th className="p-4">Capacity</th>
+                    <th className="p-4">Type</th>
+                    <th className="p-4">Position (X, Y)</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/10">
+                  {tables.sort((a, b) => Number(a.number) - Number(b.number)).map(table => (
+                    <tr key={table.id} className="text-foreground hover:bg-secondary/10 transition-colors">
+                      <td className="p-4 font-bold text-sm">Table {table.number}</td>
+                      <td className="p-4 font-medium">{table.capacity} People</td>
+                      <td className="p-4">
+                        <span className="px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-bold uppercase text-[9px]">
+                          {table.type}
+                        </span>
+                      </td>
+                      <td className="p-4 font-mono text-muted-foreground">
+                        {table.position.x}%, {table.position.y}%
+                      </td>
+                      <td className="p-4 text-right space-x-1.5">
+                        <button
+                          onClick={() => handleOpenEditTable(table)}
+                          className="p-1.5 hover:bg-accent/15 hover:text-accent rounded-lg transition-colors cursor-pointer text-muted-foreground"
+                          title="Edit table"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTable(table.id)}
+                          className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors cursor-pointer text-muted-foreground"
+                          title="Delete table"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

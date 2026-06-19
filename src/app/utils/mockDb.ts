@@ -335,6 +335,23 @@ export const mockDb = {
     return JSON.parse(localStorage.getItem('flavore_tables') || '[]');
   },
 
+  saveTable: (table: RestaurantTable) => {
+    const tables = mockDb.getTables();
+    const index = tables.findIndex(t => t.id === table.id);
+    if (index > -1) {
+      tables[index] = table;
+    } else {
+      tables.push(table);
+    }
+    localStorage.setItem('flavore_tables', JSON.stringify(tables));
+  },
+
+  deleteTable: (id: string) => {
+    const tables = mockDb.getTables();
+    const updated = tables.filter(t => t.id !== id);
+    localStorage.setItem('flavore_tables', JSON.stringify(updated));
+  },
+
   getAvailableTables: (date: string, time: string, guests: number): RestaurantTable[] => {
     const tables = mockDb.getTables();
     const reservations = mockDb.getReservations();
