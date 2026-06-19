@@ -9,6 +9,7 @@ import { mockDb, UserProfile } from "./utils/mockDb";
 import { AuthModal } from "./components/AuthModal";
 import { HomePage } from "./pages/HomePage";
 import { MenuPage } from "./pages/MenuPage";
+import { AboutPage } from "./pages/AboutPage";
 
 import { AdminPage } from "./pages/AdminPage";
 import { BookTablePage } from "./pages/BookTablePage";
@@ -89,7 +90,7 @@ export default function App() {
             {/* Left side - Hamburger Menu + Logo */}
             <div className="flex items-center gap-4">
               {/* Hamburger Menu Button (only for Storefront views) */}
-              {(location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard') && (
+              {(location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard' || location.pathname === '/about') && (
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -105,7 +106,7 @@ export default function App() {
               )}
 
               {/* Back to storefront button when in other portals */}
-              {(location.pathname !== '/' && location.pathname !== '/menu' && location.pathname !== '/book-table' && location.pathname !== '/dashboard') && (
+              {(location.pathname !== '/' && location.pathname !== '/menu' && location.pathname !== '/book-table' && location.pathname !== '/dashboard' && location.pathname !== '/about') && (
                 <button
                   onClick={() => navigate('/')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 text-xs font-semibold text-foreground/80 hover:text-foreground hover:border-accent/40 hover:bg-accent/5 transition-all cursor-pointer"
@@ -145,7 +146,7 @@ export default function App() {
                 <button
                   onClick={() => navigate('/')}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    (location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard') ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                    (location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard' || location.pathname === '/about') ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
                   }`}
                 >
                   HOME
@@ -285,6 +286,7 @@ export default function App() {
                   { label: "Home", path: "/" },
                   { label: "Menu", path: "/menu" },
                   { label: "Reservations", path: "/book-table" },
+                  { label: "About & Contact", path: "/about" },
                   ...(currentUser ? [{ label: "My Dashboard", path: "/dashboard" }] : []),
                   ...(currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff') ? [
                     { label: "Kitchen Monitor", path: "/kitchen" }
@@ -347,6 +349,7 @@ export default function App() {
           <Route path="/" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
           <Route
             path="/kitchen"
