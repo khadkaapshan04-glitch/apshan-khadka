@@ -176,7 +176,8 @@ const initDb = () => {
   if (!localStorage.getItem('flavore_reservations')) {
     localStorage.setItem('flavore_reservations', JSON.stringify([]));
   }
-  if (!localStorage.getItem('flavore_tables')) {
+  const tables = localStorage.getItem('flavore_tables');
+  if (!tables || JSON.parse(tables).length === 0) {
     localStorage.setItem('flavore_tables', JSON.stringify(INITIAL_TABLES));
   }
   if (!localStorage.getItem('flavore_cart')) {
@@ -332,7 +333,10 @@ export const mockDb = {
 
   // --- Table Services ---
   getTables: (): RestaurantTable[] => {
-    return JSON.parse(localStorage.getItem('flavore_tables') || '[]');
+    const data = localStorage.getItem('flavore_tables');
+    if (!data) return INITIAL_TABLES;
+    const parsed = JSON.parse(data);
+    return parsed.length > 0 ? parsed : INITIAL_TABLES;
   },
 
   saveTable: (table: RestaurantTable) => {

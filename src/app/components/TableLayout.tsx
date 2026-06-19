@@ -50,6 +50,12 @@ export const TableLayout: React.FC<TableLayoutProps> = ({
           Kitchen
         </div>
 
+        {tables.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs font-semibold">
+            Loading restaurant layout...
+          </div>
+        )}
+
         {tables.map((table) => {
           const isSuitable = table.capacity >= guestCount;
           const isAvailable = availableTableIds.includes(table.id);
