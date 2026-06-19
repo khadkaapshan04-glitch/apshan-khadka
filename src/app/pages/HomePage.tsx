@@ -17,6 +17,11 @@ import uploadedFoodImg from '../../imports/Minimalistic_simple_food_design_20260
 
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { FloatingFood3D } from '../components/FloatingFood3D';
+import { Hero3DBackground } from '../components/Hero3DBackground';
+import { OrbitalRing3D } from '../components/OrbitalRing3D';
+import { Tilt3DCard } from '../components/Tilt3DCard';
+import { AnimatedWaveDivider } from '../components/AnimatedWaveDivider';
+import { WindAndGrass } from '../components/WindAndGrass';
 
 import { mockDb, UserProfile, type Reservation, type Order } from '../utils/mockDb';
 
@@ -72,6 +77,11 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
   const heroScale = useTransform(scrollY, [0, 300], [1, 0.96]);
 
+  // Parallax transforms for scroll depth
+  const parallaxY1 = useTransform(scrollY, [0, 600], [0, -80]);
+  const parallaxY2 = useTransform(scrollY, [0, 600], [0, -40]);
+  const parallaxY3 = useTransform(scrollY, [0, 600], [0, -120]);
+
   React.useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % foodImages.length);
@@ -93,21 +103,87 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
   return (
     <div className="pt-[72px] min-h-screen" onMouseMove={handleMouseMove}>
       <section className="relative min-h-screen flex items-center">
+        {/* ── 3D Animated Background ── */}
+        <Hero3DBackground mousePos={mousePos} />
+
+        {/* ── Wind (Air) and Swaying Grass ── */}
+        <WindAndGrass />
+
+        {/* ── Animated corner arc ── */}
         <div className="absolute top-0 right-0 w-[480px] h-[480px] pointer-events-none overflow-hidden">
-          <svg viewBox="0 0 400 400" className="w-full h-full opacity-[0.07]">
+          <motion.svg
+            viewBox="0 0 400 400"
+            className="w-full h-full opacity-[0.07]"
+            animate={{ rotate: [0, 3, -2, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          >
             <circle cx="400" cy="0" r="310" fill="none" stroke="#d4a574" strokeWidth="90" />
-          </svg>
+          </motion.svg>
         </div>
+
+        {/* ── Floating accent lines (parallax depth) ── */}
+        <motion.div
+          className="absolute top-[15%] left-[8%] w-24 h-[1px] bg-gradient-to-r from-transparent via-accent/20 to-transparent pointer-events-none"
+          style={{ y: parallaxY1 }}
+          animate={{ scaleX: [0.5, 1, 0.5], opacity: [0.3, 0.7, 0.3] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute top-[35%] right-[12%] w-16 h-[1px] bg-gradient-to-r from-transparent via-accent/15 to-transparent pointer-events-none"
+          style={{ y: parallaxY2 }}
+          animate={{ scaleX: [0.6, 1, 0.6], opacity: [0.2, 0.6, 0.2] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        />
+        <motion.div
+          className="absolute bottom-[20%] left-[22%] w-20 h-[1px] bg-gradient-to-r from-transparent via-accent/10 to-transparent pointer-events-none"
+          style={{ y: parallaxY3 }}
+          animate={{ scaleX: [0.7, 1, 0.7], opacity: [0.15, 0.5, 0.15] }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+        />
+
+        {/* ── Floating 3D dots (depth particles) ── */}
+        {[
+          { top: '12%', left: '5%', size: 4, dur: 7, del: 0 },
+          { top: '28%', left: '88%', size: 3, dur: 9, del: 1.5 },
+          { top: '72%', left: '92%', size: 5, dur: 6, del: 3 },
+          { top: '85%', left: '15%', size: 3, dur: 8, del: 2 },
+          { top: '55%', left: '3%', size: 4, dur: 10, del: 4 },
+        ].map((dot, i) => (
+          <motion.div
+            key={`dot-${i}`}
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              top: dot.top,
+              left: dot.left,
+              width: dot.size,
+              height: dot.size,
+              backgroundColor: 'rgba(212, 165, 116, 0.35)',
+              boxShadow: '0 0 8px rgba(212, 165, 116, 0.2)',
+            }}
+            animate={{
+              y: [0, -20, 0, 15, 0],
+              x: [0, 8, 0, -8, 0],
+              scale: [1, 1.3, 1, 0.8, 1],
+              opacity: [0.3, 0.7, 0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: dot.dur,
+              delay: dot.del,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
 
         <div className="max-w-7xl mx-auto px-6 lg:px-10 w-full">
           <div className="grid lg:grid-cols-2 items-center gap-8 py-14 lg:py-20">
             <motion.div
-              style={{ opacity: heroOpacity }}
               variants={stagger}
               initial="hidden"
               animate="visible"
               className="relative z-10"
             >
+              {/* Animated accent bar */}
               <motion.div
                 className="w-12 h-[3px] bg-accent rounded-full mb-6"
                 initial={{ scaleX: 0 }}
@@ -117,7 +193,22 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
               />
 
               <motion.h1 variants={fadeUp} className="font-display leading-[1.08] mb-5">
-                <span className="block text-[3.1rem] lg:text-[4rem] font-semibold text-foreground">Delicious Food,</span>
+                <motion.span
+                  className="block text-[3.1rem] lg:text-[4rem] font-semibold text-foreground"
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                  }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    backgroundImage: 'linear-gradient(90deg, var(--foreground) 0%, #d4a574 50%, var(--foreground) 100%)',
+                    backgroundSize: '200% 100%',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Delicious Food,
+                </motion.span>
                 <span className="block text-[3.1rem] lg:text-[4rem] font-semibold text-foreground">
                   Perfect <span className="text-accent italic">Experience</span>
                 </span>
@@ -130,13 +221,12 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                 Good food brings people together. We serve flavors that stay with you, moments that bring you back.
               </motion.p>
 
+              {/* ── 3D Tilt Feature Cards ── */}
               <motion.div variants={stagger} className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-[600px]">
                 {features.map((f) => (
-                  <motion.div
+                  <Tilt3DCard
                     key={f.title}
-                    variants={fadeUp}
-                    whileHover={{ y: -5, scale: 1.025 }}
-                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                    tiltIntensity={12}
                     onClick={() => {
                       if (f.title.includes("Booking")) {
                         navigate('/book-table');
@@ -144,18 +234,32 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                         navigate('/menu');
                       }
                     }}
-                    className="bg-white/75 backdrop-blur-sm border border-border/35 rounded-2xl p-4 cursor-pointer group hover:border-accent/30 hover:shadow-sm transition-all duration-300"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors duration-300">
-                      <f.icon className="w-[18px] h-[18px] text-accent" strokeWidth={1.5} />
-                    </div>
-                    <div className="text-[11px] font-semibold text-foreground mb-0.5 leading-tight">{f.title}</div>
-                    <div className="text-[10px] text-muted-foreground leading-relaxed">{f.desc}</div>
-                  </motion.div>
+                    <motion.div
+                      variants={fadeUp}
+                      whileHover={{ y: -5, scale: 1.025 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="bg-white/75 backdrop-blur-sm border border-border/35 rounded-2xl p-4 cursor-pointer group hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5 transition-all duration-300"
+                    >
+                      <motion.div
+                        className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors duration-300"
+                        whileHover={{
+                          rotateY: [0, 180, 360],
+                        }}
+                        transition={{ duration: 0.6 }}
+                        style={{ transformStyle: 'preserve-3d' }}
+                      >
+                        <f.icon className="w-[18px] h-[18px] text-accent" strokeWidth={1.5} />
+                      </motion.div>
+                      <div className="text-[11px] font-semibold text-foreground mb-0.5 leading-tight">{f.title}</div>
+                      <div className="text-[10px] text-muted-foreground leading-relaxed">{f.desc}</div>
+                    </motion.div>
+                  </Tilt3DCard>
                 ))}
               </motion.div>
             </motion.div>
 
+            {/* ── Hero Image with 3D Orbital Rings ── */}
             <motion.div
               style={{ scale: heroScale }}
               initial={{ opacity: 0, x: 55 }}
@@ -163,14 +267,21 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
               transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
               className="relative flex items-center justify-center"
             >
-              <div
+              {/* Radial glow */}
+              <motion.div
                 className="absolute inset-0 pointer-events-none"
                 style={{
                   background:
                     'radial-gradient(ellipse 70% 65% at 55% 50%, rgba(212,165,116,0.13) 0%, transparent 70%)',
                 }}
+                animate={{
+                  scale: [1, 1.05, 1],
+                  opacity: [0.8, 1, 0.8],
+                }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
               />
 
+              {/* Animated botanical/plant SVG */}
               <div className="absolute left-[4%] top-1/2 -translate-y-[48%] w-44 h-60 pointer-events-none z-10">
                 <svg viewBox="0 0 200 300" className="w-full h-full" fill="none">
                   <motion.g
@@ -226,6 +337,9 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                 </svg>
               </div>
 
+              {/* ── 3D Orbital Rings around food ── */}
+              <OrbitalRing3D />
+
               <motion.div
                 className="relative z-20 w-[400px] h-[400px] lg:w-[490px] lg:h-[490px]"
                 animate={{
@@ -243,9 +357,9 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentImageIndex}
-                    initial={{ opacity: 0, y: 15, rotateY: -20 }}
-                    animate={{ opacity: 1, y: 0, rotateY: 0 }}
-                    exit={{ opacity: 0, y: -15, rotateY: 20 }}
+                    initial={{ opacity: 0, y: 15, rotateY: -20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, rotateY: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -15, rotateY: 20, scale: 0.95 }}
                     transition={{ duration: 0.8, ease: 'easeInOut' }}
                     className="absolute top-0 left-0 w-full h-full"
                   >
@@ -266,12 +380,14 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                 </AnimatePresence>
               </motion.div>
 
+              {/* ── "Made with love" badge with 3D pop ── */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.82, x: 18 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
+                initial={{ opacity: 0, scale: 0.82, x: 18, rotateY: -30 }}
+                animate={{ opacity: 1, scale: 1, x: 0, rotateY: 0 }}
                 transition={{ delay: 1.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                whileHover={{ scale: 1.06 }}
+                whileHover={{ scale: 1.06, rotateY: 10, z: 30 }}
                 className="absolute right-0 top-[38%] z-30 bg-white/96 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-lg cursor-pointer flex items-center gap-2"
+                style={{ transformStyle: 'preserve-3d' }}
               >
                 <motion.div animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 1.4, repeat: Infinity }}>
                   <Heart className="w-4 h-4 text-red-400 fill-red-400" />
@@ -283,7 +399,24 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
         </div>
       </section>
 
-      <section className="border-t border-border/35 py-14 bg-card/20">
+      {/* ── Animated Wave Divider ── */}
+      <AnimatedWaveDivider />
+
+      {/* ── Stats Section with 3D effects ── */}
+      <section className="border-t border-border/35 py-14 bg-card/20 relative overflow-hidden">
+        {/* Background animated gradient for stats section */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(212,165,116,0.04) 0%, transparent 70%)',
+          }}
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.5, 0.8, 0.5],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        />
+
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <motion.div
             initial="hidden"
@@ -293,29 +426,37 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
             className="grid grid-cols-2 lg:grid-cols-4 gap-8"
           >
             {stats.map((s, i) => (
-              <motion.div key={s.label} variants={fadeUp} whileHover={{ y: -6 }} className="text-center group cursor-pointer">
-                <motion.div
-                  className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent/10 mb-3 group-hover:bg-accent/20 transition-colors duration-300"
-                  whileHover={{ rotate: [0, -10, 10, 0] }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <s.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
+              <Tilt3DCard key={s.label} tiltIntensity={10} glareEnabled={true}>
+                <motion.div variants={fadeUp} whileHover={{ y: -6 }} className="text-center group cursor-pointer p-4">
+                  <motion.div
+                    className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent/10 mb-3 group-hover:bg-accent/20 transition-colors duration-300"
+                    whileHover={{
+                      rotateY: [0, 360],
+                      scale: [1, 1.1, 1],
+                    }}
+                    transition={{ duration: 0.6 }}
+                    style={{ transformStyle: 'preserve-3d' }}
+                  >
+                    <s.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
+                  </motion.div>
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    whileInView={{ scale: 1, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.08 + 0.3, type: 'spring', stiffness: 180 }}
+                  >
+                    <div className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-1">{s.value}</div>
+                    <div className="text-xs text-muted-foreground font-medium">{s.label}</div>
+                  </motion.div>
                 </motion.div>
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  whileInView={{ scale: 1, opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08 + 0.3, type: 'spring', stiffness: 180 }}
-                >
-                  <div className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-1">{s.value}</div>
-                  <div className="text-xs text-muted-foreground font-medium">{s.label}</div>
-                </motion.div>
-              </motion.div>
+              </Tilt3DCard>
             ))}
           </motion.div>
         </div>
       </section>
+
+      {/* ── Bottom Wave ── */}
+      <AnimatedWaveDivider flip />
     </div>
   );
 }
-
