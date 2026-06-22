@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { RestaurantTable } from '../utils/mockDb';
+import { RestaurantTable } from '../lib/types';
 import { Users, Info } from 'lucide-react';
 
 interface TableLayoutProps {

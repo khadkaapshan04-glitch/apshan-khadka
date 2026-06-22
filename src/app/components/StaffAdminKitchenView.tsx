@@ -9,7 +9,8 @@ import {
   ArrowRight,
   XCircle,
 } from 'lucide-react';
-import { mockDb, Order, OrderStatus } from '../utils/mockDb';
+import { db } from '../lib/supabaseDb';
+import { Order, OrderStatus } from '../lib/types';
 
 type KitchenCardMode = 'staff' | 'admin';
 
@@ -180,17 +181,28 @@ function KitchenOrderCard({
 export function StaffAdminKitchenView({ mode }: { mode: KitchenCardMode }) {
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const fetchOrders = () => setOrders(mockDb.getOrders());
+  const fetchOrders = async () => {
+    try {
+      const data = await db.getOrders();
+      setOrders(data);
+    } catch (e) {
+      console.error('Error fetching staff orders:', e);
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 3000);
+    const interval = setInterval(fetchOrders, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleStatusChange = (orderId: string, nextStatus: OrderStatus) => {
-    mockDb.updateOrderStatus(orderId, nextStatus);
-    fetchOrders();
+  const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
+    try {
+      await db.updateOrderStatus(orderId, nextStatus);
+      fetchOrders();
+    } catch (e) {
+      console.error('Error updating order status in staff view:', e);
+    }
   };
 
   const activeOrders = useMemo(

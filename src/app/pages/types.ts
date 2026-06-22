@@ -1,4 +1,4 @@
-import type { UserProfile } from '../utils/mockDb';
+import type { UserProfile } from '../lib/types';
 
 export type PageName = 'home' | 'menu' | 'kitchen' | 'admin';
 

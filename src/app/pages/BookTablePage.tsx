@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2 } from 'lucide-react';
-import { mockDb, Reservation, UserProfile, RestaurantTable } from '../utils/mockDb';
+import { db } from '../lib/supabaseDb';
+import { Reservation, UserProfile, RestaurantTable, toRestaurantTableWithPosition } from '../lib/types';
 import { FloatingFood3D } from '../components/FloatingFood3D';
 import { TableLayout } from '../components/TableLayout';
 
@@ -18,27 +19,42 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
   const [resGuests, setResGuests] = useState(2);
   const [resDate, setResDate] = useState(new Date().toISOString().split('T')[0]);
   const [resTime, setResTime] = useState('18:00');
-  const [resSuccess, setResSuccess] = useState<Reservation | null>(null);
+  const [resSuccess, setResSuccess] = useState<any | null>(null);
 
   // Table Selection States
-  const [allTables, setAllTables] = useState<RestaurantTable[]>([]);
+  const [allTables, setAllTables] = useState<any[]>([]);
   const [availableTableIds, setAvailableTableIds] = useState<string[]>([]);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
 
   useEffect(() => {
-    setAllTables(mockDb.getTables());
+    const fetchTables = async () => {
+      try {
+        const data = await db.getTables();
+        setAllTables(data.map(toRestaurantTableWithPosition));
+      } catch (e) {
+        console.error('Error fetching tables on BookTablePage:', e);
+      }
+    };
+    fetchTables();
   }, []);
 
   useEffect(() => {
-    if (resDate && resTime && resGuests) {
-      const available = mockDb.getAvailableTables(resDate, resTime, resGuests);
-      setAvailableTableIds(available.map(t => t.id));
+    const fetchAvailable = async () => {
+      if (resDate && resTime && resGuests) {
+        try {
+          const available = await db.getAvailableTables(resDate, resTime, resGuests);
+          setAvailableTableIds(available.map(t => t.id));
 
-      // If previously selected table is no longer available, deselect it
-      if (selectedTableId && !available.some(t => t.id === selectedTableId)) {
-        setSelectedTableId(null);
+          // If previously selected table is no longer available, deselect it
+          if (selectedTableId && !available.some(t => t.id === selectedTableId)) {
+            setSelectedTableId(null);
+          }
+        } catch (e) {
+          console.error('Error fetching available tables:', e);
+        }
       }
-    }
+    };
+    fetchAvailable();
   }, [resDate, resTime, resGuests, selectedTableId]);
 
   useEffect(() => {
@@ -48,7 +64,7 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
     }
   }, [currentUser]);
 
-  const handleBookTable = (e: React.FormEvent) => {
+  const handleBookTable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
       onOpenAuth();
@@ -64,22 +80,30 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
       return;
     }
 
-    const reservation = mockDb.createReservation({
-      name: resName,
-      email: resEmail,
-      phone: resPhone,
-      guests: resGuests,
-      date: resDate,
-      time: resTime,
-      tableId: selectedTableId
-    });
+    try {
+      const reservation = await db.createReservation({
+        name: resName,
+        email: resEmail,
+        phone: resPhone,
+        guests: resGuests,
+        date: resDate,
+        time: resTime,
+        tableId: selectedTableId
+      });
 
-    setResSuccess(mockDb.getReservations().find(r => r.id === reservation.id) || reservation);
-    setResPhone('');
-    setResGuests(2);
-    setResDate(new Date().toISOString().split('T')[0]);
-    setResTime('18:00');
-    setSelectedTableId(null);
+      if (reservation) {
+        const list = await db.getReservations();
+        setResSuccess(list.find((r: any) => r.id === reservation.id) || reservation);
+      }
+      setResPhone('');
+      setResGuests(2);
+      setResDate(new Date().toISOString().split('T')[0]);
+      setResTime('18:00');
+      setSelectedTableId(null);
+    } catch (e) {
+      console.error('Error booking table:', e);
+      alert('Failed to book table. Please try again.');
+    }
   };
 
   if (!allTables || allTables.length === 0) {

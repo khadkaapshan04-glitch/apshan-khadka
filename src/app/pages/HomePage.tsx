@@ -23,7 +23,7 @@ import { Tilt3DCard } from '../components/Tilt3DCard';
 import { AnimatedWaveDivider } from '../components/AnimatedWaveDivider';
 import { WindAndGrass } from '../components/WindAndGrass';
 
-import { mockDb, UserProfile, type Reservation, type Order } from '../utils/mockDb';
+import type { UserProfile } from '../lib/types';
 
 // Keep these values identical to the original App.tsx
 const foodImages = [
@@ -227,13 +227,15 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                   <Tilt3DCard
                     key={f.title}
                     tiltIntensity={12}
-                    onClick={() => {
-                      if (f.title.includes("Booking")) {
-                        navigate('/book-table');
-                      } else if (f.title.includes("Food") || f.title.includes("Delivery")) {
-                        navigate('/menu');
-                      }
-                    }}
+                      onClick={() => {
+                        if (f.title.includes("Booking")) {
+                          navigate('/book-table');
+                        } else if (f.title.includes("Food") || f.title.includes("Delivery")) {
+                          navigate('/menu');
+                        } else if (f.title.includes("Support")) {
+                          navigate('/about');
+                        }
+                      }}
                   >
                     <motion.div
                       variants={fadeUp}

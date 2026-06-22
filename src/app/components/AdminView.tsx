@@ -7,7 +7,8 @@ import {
   Trophy, DollarSign, Calendar, ShoppingBag, Star, Plus, Edit3, Trash2, Check, X,
   Search, Eye, ShieldAlert, CheckCircle2, ChevronRight, Sliders
 } from 'lucide-react';
-import { mockDb, MenuItem, Order, Reservation, RestaurantTable } from '../utils/mockDb';
+import { db } from '../lib/supabaseDb';
+import { MenuItem, Order, Reservation, RestaurantTable, toRestaurantTableWithPosition } from '../lib/types';
 
 export const AdminView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'tables'>('analytics');
@@ -16,14 +17,14 @@ export const AdminView: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [tables, setTables] = useState<RestaurantTable[]>([]);
+  const [tables, setTables] = useState<any[]>([]);
   
   // CRUD states
   const [isEditing, setIsEditing] = useState<MenuItem | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   // Table CRUD states
-  const [isEditingTable, setIsEditingTable] = useState<RestaurantTable | null>(null);
+  const [isEditingTable, setIsEditingTable] = useState<any | null>(null);
   const [isCreatingTable, setIsCreatingTable] = useState(false);
   const [tableNum, setTableNum] = useState('');
   const [tableCapacity, setTableCapacity] = useState(2);
@@ -40,16 +41,26 @@ export const AdminView: React.FC = () => {
   // Reservation assignment state
   const [tableAssignment, setTableAssignment] = useState<{ [resId: string]: string }>({});
 
-  const refreshData = () => {
-    setOrders(mockDb.getOrders());
-    setMenu(mockDb.getMenu());
-    setReservations(mockDb.getReservations());
-    setTables(mockDb.getTables());
+  const refreshData = async () => {
+    try {
+      const [ordersData, menuData, reservationsData, tablesData] = await Promise.all([
+        db.getOrders(),
+        db.getMenu(),
+        db.getReservations(),
+        db.getTables()
+      ]);
+      setOrders(ordersData);
+      setMenu(menuData);
+      setReservations(reservationsData);
+      setTables(tablesData.map(toRestaurantTableWithPosition));
+    } catch (e) {
+      console.error('Error refreshing data from Supabase:', e);
+    }
   };
 
   useEffect(() => {
     refreshData();
-    const interval = setInterval(refreshData, 4000); // Poll database
+    const interval = setInterval(refreshData, 5000); // Poll database less frequently for performance
     return () => clearInterval(interval);
   }, []);
 
@@ -72,30 +83,30 @@ export const AdminView: React.FC = () => {
     setTablePosY(50);
   };
 
-  const handleSaveTable = (e: React.FormEvent) => {
+  const handleSaveTable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tableNum || tableCapacity <= 0) {
       alert('Please fill out all required fields.');
       return;
     }
 
-    const savedTable: RestaurantTable = {
-      id: isEditingTable ? isEditingTable.id : 't_' + Math.random().toString(36).substr(2, 9),
+    const savedTable: any = {
+      id: isEditingTable ? isEditingTable.id : undefined, // let Supabase auto-generate UUID for new table
       number: tableNum,
       capacity: Number(tableCapacity),
       type: tableType,
       position: { x: Number(tablePosX), y: Number(tablePosY) }
     };
 
-    mockDb.saveTable(savedTable);
+    await db.saveTable(savedTable);
     setIsEditingTable(null);
     setIsCreatingTable(false);
     refreshData();
   };
 
-  const handleDeleteTable = (id: string) => {
+  const handleDeleteTable = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this table?')) {
-      mockDb.deleteTable(id);
+      await db.deleteTable(id);
       refreshData();
     }
   };
@@ -121,7 +132,7 @@ export const AdminView: React.FC = () => {
     setCrudAvailable(true);
   };
 
-  const handleSaveItem = (e: React.FormEvent) => {
+  const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!crudName || crudPrice <= 0 || !crudImg) {
       alert('Please fill out all required fields.');
@@ -129,7 +140,7 @@ export const AdminView: React.FC = () => {
     }
 
     const savedItem: MenuItem = {
-      id: isEditing ? isEditing.id : 'm_' + Math.random().toString(36).substr(2, 9),
+      id: isEditing ? isEditing.id : undefined as any, // let Supabase generate UUID
       name: crudName,
       description: crudDesc,
       price: Number(crudPrice),
@@ -138,21 +149,21 @@ export const AdminView: React.FC = () => {
       is_available: crudAvailable
     };
 
-    mockDb.saveMenuItem(savedItem);
+    await db.saveMenuItem(savedItem);
     setIsEditing(null);
     setIsCreating(false);
     refreshData();
   };
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this menu item?')) {
-      mockDb.deleteMenuItem(id);
+      await db.deleteMenuItem(id);
       refreshData();
     }
   };
 
   // Reservation actions
-  const handleConfirmReservation = (id: string) => {
+  const handleConfirmReservation = async (id: string) => {
     const reservation = reservations.find(r => r.id === id);
     let tableId = tableAssignment[id];
 
@@ -160,16 +171,16 @@ export const AdminView: React.FC = () => {
     if (tableId) {
       const table = tables.find(t => t.id === tableId || t.number === tableId);
       if (table) tableId = table.id;
-    } else if (reservation?.tableId) {
-      tableId = reservation.tableId;
+    } else if (reservation?.table_id) {
+      tableId = reservation.table_id;
     }
 
-    mockDb.updateReservationStatus(id, 'confirmed', tableId);
+    await db.updateReservationStatus(id, 'confirmed', tableId);
     refreshData();
   };
 
-  const handleCancelReservation = (id: string) => {
-    mockDb.updateReservationStatus(id, 'cancelled');
+  const handleCancelReservation = async (id: string) => {
+    await db.updateReservationStatus(id, 'cancelled');
     refreshData();
   };
 

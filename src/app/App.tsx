@@ -5,7 +5,9 @@ import {
 } from "lucide-react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 
-import { mockDb, UserProfile } from "./utils/mockDb";
+import { db } from "./lib/supabaseDb";
+import { supabase } from "./lib/supabaseClient";
+import { useAuth } from "./context/AuthContext";
 import { AuthModal } from "./components/AuthModal";
 import { HomePage } from "./pages/HomePage";
 import { MenuPage } from "./pages/MenuPage";
@@ -17,9 +19,6 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { StaffAdminKitchenPage } from "./pages/StaffAdminKitchenPage";
 import { GoldenEmbersBackground } from "./components/GoldenEmbersBackground";
 
-
-
-
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,17 +27,17 @@ export default function App() {
 
   const { scrollY } = useScroll();
 
-
   // App Navigation & Role States
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const { profile, logout } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authInitialView, setAuthInitialView] = useState<'signin' | 'signup' | 'forgot' | 'reset_password'>('signin');
+  const [authInitialEmail, setAuthInitialEmail] = useState('');
 
-
-
-  useEffect(() => {
-    // Check for logged in user session
-    setCurrentUser(mockDb.getCurrentUser());
-  }, []);
+  const currentUser = profile ? {
+    email: profile.email,
+    fullName: profile.full_name,
+    role: profile.role
+  } : null;
 
   useEffect(() => {
     const fn = () => setIsScrolled(window.scrollY > 20);
@@ -46,26 +45,78 @@ export default function App() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  const openResetPasswordModal = (email = '') => {
+    setAuthInitialView('reset_password');
+    setAuthInitialEmail(email);
+    setIsAuthOpen(true);
+  };
 
+  useEffect(() => {
+    const isRecoveryUrl =
+      location.pathname === '/reset-password' ||
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery');
 
-  const handleLoginSuccess = (user: UserProfile) => {
-    setCurrentUser(user);
+    if (isRecoveryUrl) {
+      openResetPasswordModal();
+
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          openResetPasswordModal(session.user.email ?? '');
+        }
+      });
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        openResetPasswordModal(session?.user?.email ?? '');
+
+        if (window.location.hash || window.location.search) {
+          window.history.replaceState({}, document.title, '/reset-password');
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [location.pathname]);
+
+  const handleLoginSuccess = (role: string) => {
     // Auto-redirect staff/admin to their dashboard for a smooth UX
-    if (user.role === 'admin') {
+    if (role === 'admin') {
       navigate('/admin');
-    } else if (user.role === 'staff') {
+    } else if (role === 'staff') {
       navigate('/kitchen');
     } else if (location.pathname === '/') {
       navigate('/');
     }
     setIsAuthOpen(false);
+    setAuthInitialView('signin');
+    setAuthInitialEmail('');
   };
 
-  const handleLogout = () => {
-    mockDb.logout();
-    setCurrentUser(null);
+  const handleAuthClose = () => {
+    setIsAuthOpen(false);
+    setAuthInitialView('signin');
+    setAuthInitialEmail('');
+  };
+
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
+
+  const handleDemoLogin = async (email: string) => {
+    try {
+      const u = await db.login(email, 'Flavore123!');
+      if (u) handleLoginSuccess(u.role);
+    } catch (err) {
+      console.error('Demo login failed:', err);
+      setAuthInitialView('signin');
+      setAuthInitialEmail(email);
+      setIsAuthOpen(true);
+    }
+  };
+
 
 
 
@@ -350,6 +401,7 @@ export default function App() {
           <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/reset-password" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
           <Route
             path="/kitchen"
@@ -381,8 +433,10 @@ export default function App() {
         {isAuthOpen && (
           <AuthModal 
             isOpen={isAuthOpen} 
-            onClose={() => setIsAuthOpen(false)} 
+            onClose={handleAuthClose}
             onLoginSuccess={handleLoginSuccess}
+            initialView={authInitialView}
+            initialEmail={authInitialEmail}
           />
         )}
       </AnimatePresence>
@@ -392,18 +446,9 @@ export default function App() {
         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hidden sm:inline">Role Switcher:</span>
         <div className="flex gap-1 bg-secondary p-1 rounded-xl">
           {[
-            { role: 'Customer', onClick: () => {
-              const u = mockDb.login('customer@flavore.com');
-              if (u) handleLoginSuccess(u);
-            }},
-            { role: 'Kitchen Staff', onClick: () => {
-              const u = mockDb.login('staff@flavore.com');
-              if (u) handleLoginSuccess(u);
-            }},
-            { role: 'Admin', onClick: () => {
-              const u = mockDb.login('admin@flavore.com');
-              if (u) handleLoginSuccess(u);
-            }}
+            { role: 'Customer', onClick: () => handleDemoLogin('customer@flavore.com') },
+            { role: 'Kitchen Staff', onClick: () => handleDemoLogin('staff@flavore.com') },
+            { role: 'Admin', onClick: () => handleDemoLogin('admin@flavore.com') }
           ].map(opt => (
             <button
               key={opt.role}

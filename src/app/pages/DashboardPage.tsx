@@ -9,7 +9,8 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
-import { mockDb, Order, Reservation, UserProfile } from '../utils/mockDb';
+import { db } from '../lib/supabaseDb';
+import { Order, Reservation, UserProfile } from '../lib/types';
 import { FloatingFood3D } from '../components/FloatingFood3D';
 
 interface DashboardPageProps {
@@ -144,34 +145,45 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
 
   /* Fetch data */
   useEffect(() => {
-    if (currentUser) {
-      const allOrders = mockDb.getOrders();
-      setUserOrders(allOrders.filter(o =>
-        o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
-      ));
-      const allRes = mockDb.getReservations();
-      setUserReservations(allRes.filter(r =>
-        r.email.toLowerCase() === currentUser.email.toLowerCase()
-      ));
-    } else {
-      setUserOrders([]);
-      setUserReservations([]);
-    }
+    const loadDashboardData = async () => {
+      if (currentUser) {
+        try {
+          const allOrders = await db.getOrders();
+          setUserOrders(allOrders.filter(o =>
+            o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
+          ));
+          const allRes = await db.getReservations();
+          setUserReservations(allRes.filter(r =>
+            r.email.toLowerCase() === currentUser.email.toLowerCase()
+          ));
+        } catch (e) {
+          console.error('Error fetching dashboard data:', e);
+        }
+      } else {
+        setUserOrders([]);
+        setUserReservations([]);
+      }
+    };
+    loadDashboardData();
   }, [currentUser]);
 
   /* Live poll for order updates */
   useEffect(() => {
     if (!currentUser) return;
-    const interval = setInterval(() => {
-      const allOrders = mockDb.getOrders();
-      setUserOrders(allOrders.filter(o =>
-        o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
-      ));
-      const allRes = mockDb.getReservations();
-      setUserReservations(allRes.filter(r =>
-        r.email.toLowerCase() === currentUser.email.toLowerCase()
-      ));
-    }, 3000);
+    const interval = setInterval(async () => {
+      try {
+        const allOrders = await db.getOrders();
+        setUserOrders(allOrders.filter(o =>
+          o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
+        ));
+        const allRes = await db.getReservations();
+        setUserReservations(allRes.filter(r =>
+          r.email.toLowerCase() === currentUser.email.toLowerCase()
+        ));
+      } catch (e) {
+        console.error('Error polling dashboard updates:', e);
+      }
+    }, 5000);
     return () => clearInterval(interval);
   }, [currentUser]);
 

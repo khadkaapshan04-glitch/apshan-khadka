@@ -4,7 +4,8 @@ import {
   ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CheckCircle2,
   Truck, UtensilsCrossed, PackageOpen, MapPin, Phone, MessageSquare, Clock
 } from 'lucide-react';
-import { mockDb, MenuItem, Order, UserProfile } from '../utils/mockDb';
+import { db } from '../lib/supabaseDb';
+import { MenuItem, Order, UserProfile } from '../lib/types';
 
 interface MenuPageProps {
   currentUser: UserProfile | null;
@@ -16,10 +17,10 @@ const DELIVERY_FEE = 4.99;
 export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>(mockDb.getCart());
+  const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>(db.getCart());
 
   useEffect(() => {
-    mockDb.setCart(cart);
+    db.setCart(cart);
   }, [cart]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderType, setOrderType] = useState<'dine-in' | 'takeaway' | 'delivery'>('dine-in');
@@ -32,7 +33,15 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [deliveryNotes, setDeliveryNotes] = useState('');
 
   useEffect(() => {
-    setMenu(mockDb.getMenu());
+    const fetchMenu = async () => {
+      try {
+        const data = await db.getMenu();
+        setMenu(data);
+      } catch (e) {
+        console.error('Error fetching menu items:', e);
+      }
+    };
+    fetchMenu();
   }, []);
 
   const categories = ['All', 'Starters', 'Mains', 'Desserts', 'Beverages'];
@@ -68,7 +77,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
   const cartTotal = orderType === 'delivery' ? cartSubtotal + DELIVERY_FEE : cartSubtotal;
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
       onOpenAuth();
@@ -88,25 +97,34 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
       return;
     }
 
-    const order = mockDb.placeOrder({
-      customerName: currentUser.fullName,
-      customerEmail: currentUser.email,
-      items: cart,
-      total: cartTotal,
-      type: orderType,
-      tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
-      deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
-      deliveryPhone: orderType === 'delivery' ? deliveryPhone : undefined,
-      deliveryNotes: orderType === 'delivery' ? deliveryNotes : undefined,
-    });
+    try {
+      const order = await db.placeOrder({
+        customerName: currentUser.fullName,
+        customerEmail: currentUser.email,
+        items: cart,
+        total: cartTotal,
+        type: orderType,
+        tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
+        deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+        deliveryPhone: orderType === 'delivery' ? deliveryPhone : undefined,
+        deliveryNotes: orderType === 'delivery' ? deliveryNotes : undefined,
+      });
 
-    setOrderSuccess(order);
-    setCart([]);
-    setIsCartOpen(false);
-    setDeliveryAddress('');
-    setDeliveryPhone('');
-    setDeliveryNotes('');
-    setTableNumber('');
+      if (order) {
+        setOrderSuccess(order);
+        setCart([]);
+        setIsCartOpen(false);
+        setDeliveryAddress('');
+        setDeliveryPhone('');
+        setDeliveryNotes('');
+        setTableNumber('');
+      } else {
+        alert('Failed to place order. Please try again.');
+      }
+    } catch (e) {
+      console.error('Error placing order:', e);
+      alert('Error placing order. Please try again.');
+    }
   };
 
   const orderTypeOptions: { key: typeof orderType; label: string; icon: React.ElementType; desc: string }[] = [

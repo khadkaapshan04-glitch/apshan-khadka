@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChefHat, Clock, AlertCircle, CheckCircle, Package, XCircle, ArrowRight } from 'lucide-react';
-import { mockDb, Order, OrderStatus } from '../utils/mockDb';
+import { db } from '../lib/supabaseDb';
+import { Order, OrderStatus } from '../lib/types';
 
 export const KitchenView: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const fetchOrders = () => {
-    setOrders(mockDb.getOrders());
+  const fetchOrders = async () => {
+    try {
+      const ordersData = await db.getOrders();
+      setOrders(ordersData);
+    } catch (e) {
+      console.error('Error fetching kitchen orders:', e);
+    }
   };
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 3000); // refresh every 3 seconds for real-time emulation
+    const interval = setInterval(fetchOrders, 4000); // Poll database
     return () => clearInterval(interval);
   }, []);
 
-  const handleStatusChange = (orderId: string, nextStatus: OrderStatus) => {
-    mockDb.updateOrderStatus(orderId, nextStatus);
-    fetchOrders();
+  const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
+    try {
+      await db.updateOrderStatus(orderId, nextStatus);
+      fetchOrders();
+    } catch (e) {
+      console.error('Error updating order status in kitchen:', e);
+    }
   };
 
   const getStatusColor = (status: OrderStatus) => {
