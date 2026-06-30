@@ -28,10 +28,11 @@ export default function App() {
   const { scrollY } = useScroll();
 
   // App Navigation & Role States
-  const { profile, logout } = useAuth();
+  const { profile, loading: authLoading, logout } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authInitialView, setAuthInitialView] = useState<'signin' | 'signup' | 'forgot' | 'reset_password'>('signin');
   const [authInitialEmail, setAuthInitialEmail] = useState('');
+  const [pendingLoginRedirect, setPendingLoginRedirect] = useState(false);
 
   const currentUser = profile ? {
     email: profile.email,
@@ -80,19 +81,27 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [location.pathname]);
 
-  const handleLoginSuccess = (role: string) => {
-    // Auto-redirect staff/admin to their dashboard for a smooth UX
-    if (role === 'admin') {
-      navigate('/admin');
-    } else if (role === 'staff') {
-      navigate('/kitchen');
-    } else if (location.pathname === '/') {
-      navigate('/');
-    }
+  const handleLoginSuccess = (_role: string) => {
+    // Don't navigate immediately — wait for AuthContext to confirm the role
     setIsAuthOpen(false);
     setAuthInitialView('signin');
     setAuthInitialEmail('');
+    setPendingLoginRedirect(true);
   };
+
+  // Navigate based on AuthContext profile AFTER it finishes loading
+  useEffect(() => {
+    if (pendingLoginRedirect && !authLoading && profile) {
+      setPendingLoginRedirect(false);
+      if (profile.role === 'admin') {
+        navigate('/admin');
+      } else if (profile.role === 'staff') {
+        navigate('/kitchen');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [pendingLoginRedirect, authLoading, profile]);
 
   const handleAuthClose = () => {
     setIsAuthOpen(false);
@@ -406,7 +415,9 @@ export default function App() {
           <Route
             path="/kitchen"
             element={
-              currentUser && (currentUser.role === 'staff' || currentUser.role === 'admin') ? (
+              authLoading ? (
+                <div className="min-h-screen flex items-center justify-center bg-background"><span className="w-8 h-8 border-4 border-accent/30 border-t-accent rounded-full animate-spin" /></div>
+              ) : currentUser && (currentUser.role === 'staff' || currentUser.role === 'admin') ? (
                 <StaffAdminKitchenPage mode={currentUser.role === 'admin' ? 'admin' : 'staff'} />
               ) : (
                 <Navigate to="/" replace />
@@ -414,15 +425,17 @@ export default function App() {
             }
           />
 
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
-              currentUser && currentUser.role === 'admin' ? (
+              authLoading ? (
+                <div className="min-h-screen flex items-center justify-center bg-background"><span className="w-8 h-8 border-4 border-accent/30 border-t-accent rounded-full animate-spin" /></div>
+              ) : currentUser && currentUser.role === 'admin' ? (
                 <AdminPage />
               ) : (
                 <Navigate to="/" replace />
               )
-            } 
+            }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -440,30 +453,6 @@ export default function App() {
           />
         )}
       </AnimatePresence>
-
-      {/* Floating Easy-Demo Quick Role Switcher for Developer Testing */}
-      <div className="fixed bottom-4 left-4 z-40 bg-card/90 backdrop-blur-md border border-border/30 rounded-2xl shadow-xl p-3 flex items-center gap-3">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hidden sm:inline">Role Switcher:</span>
-        <div className="flex gap-1 bg-secondary p-1 rounded-xl">
-          {[
-            { role: 'Customer', onClick: () => handleDemoLogin('customer@flavore.com') },
-            { role: 'Kitchen Staff', onClick: () => handleDemoLogin('staff@flavore.com') },
-            { role: 'Admin', onClick: () => handleDemoLogin('admin@flavore.com') }
-          ].map(opt => (
-            <button
-              key={opt.role}
-              onClick={opt.onClick}
-              className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                currentUser?.role.toLowerCase() === opt.role.split(' ')[opt.role.split(' ').length - 1].toLowerCase()
-                  ? 'bg-accent text-white shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {opt.role}
-            </button>
-          ))}
-        </div>
-      </div>
 
     </div>
   );

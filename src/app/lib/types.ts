@@ -44,6 +44,8 @@ export interface Order {
   delivery_phone?: string;
   delivery_notes?: string;
   estimated_delivery?: string;
+  payment_method?: 'cash' | 'card' | 'digital-wallet';
+  payment_status?: 'pending' | 'paid' | 'failed';
   user_id?: string;
   created_at: string;
 }
@@ -52,7 +54,7 @@ export interface RestaurantTable {
   id: string;
   number: string;
   capacity: number;
-  type: 'booth' | 'standard' | 'outdoor';
+  type: 'front table' | 'window' | 'corner' | 'middle' | 'bar';
   position_x: number;
   position_y: number;
   created_at?: string;

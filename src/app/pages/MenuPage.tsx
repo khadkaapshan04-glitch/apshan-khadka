@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CheckCircle2,
-  Truck, UtensilsCrossed, PackageOpen, MapPin, Phone, MessageSquare, Clock
+  Truck, UtensilsCrossed, PackageOpen, MapPin, Phone, MessageSquare, Clock,
+  CreditCard, Banknote, Wallet, Receipt
 } from 'lucide-react';
 import { db } from '../lib/supabaseDb';
 import { MenuItem, Order, UserProfile } from '../lib/types';
+import { ReceiptModal } from '../components/ReceiptModal';
 
 interface MenuPageProps {
   currentUser: UserProfile | null;
@@ -31,6 +33,13 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [deliveryPhone, setDeliveryPhone] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
+
+  // Payment state
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'digital-wallet'>('cash');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -108,6 +117,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
         deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
         deliveryPhone: orderType === 'delivery' ? deliveryPhone : undefined,
         deliveryNotes: orderType === 'delivery' ? deliveryNotes : undefined,
+        paymentMethod: paymentMethod,
       });
 
       if (order) {
@@ -465,6 +475,93 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                         )}
                       </AnimatePresence>
 
+                      {/* Payment Method Selector */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-foreground/80 mb-2 uppercase tracking-wider">Payment Method</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { key: 'cash' as const, label: 'Cash', icon: Banknote, desc: 'Pay on arrival' },
+                            { key: 'card' as const, label: 'Card', icon: CreditCard, desc: 'Credit / Debit' },
+                            { key: 'digital-wallet' as const, label: 'Wallet', icon: Wallet, desc: 'Digital pay' },
+                          ].map(opt => (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() => setPaymentMethod(opt.key)}
+                              className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                                paymentMethod === opt.key 
+                                  ? 'bg-accent/10 border-accent/50 text-accent shadow-sm' 
+                                  : 'bg-card border-border/25 text-muted-foreground hover:border-border/50 hover:text-foreground'
+                              }`}
+                            >
+                              <opt.icon className={`w-4.5 h-4.5 ${paymentMethod === opt.key ? 'text-accent' : ''}`} />
+                              <span className="text-[10px] font-bold tracking-wider uppercase">{opt.label}</span>
+                              <span className="text-[8px] font-medium opacity-70">{opt.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Simulated Card Form */}
+                      <AnimatePresence mode="wait">
+                        {paymentMethod === 'card' && (
+                          <motion.div
+                            key="card-fields"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-3"
+                          >
+                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 text-white space-y-3 shadow-lg">
+                              <div className="flex justify-between items-center">
+                                <CreditCard className="w-6 h-6 opacity-80" />
+                                <span className="text-[9px] font-bold tracking-widest opacity-60">SIMULATED</span>
+                              </div>
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder="4242 4242 4242 4242"
+                                  value={cardNumber}
+                                  onChange={e => {
+                                    const v = e.target.value.replace(/\D/g, '').slice(0, 16);
+                                    setCardNumber(v.replace(/(\d{4})(?=\d)/g, '$1 '));
+                                  }}
+                                  className="w-full bg-transparent border-b border-white/20 text-sm font-mono tracking-[0.2em] pb-1 focus:outline-none focus:border-white/50 placeholder:text-white/30"
+                                />
+                              </div>
+                              <div className="flex gap-4">
+                                <div className="flex-1">
+                                  <label className="text-[8px] uppercase tracking-wider opacity-50">Expiry</label>
+                                  <input
+                                    type="text"
+                                    placeholder="MM/YY"
+                                    value={cardExpiry}
+                                    onChange={e => {
+                                      let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                      if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+                                      setCardExpiry(v);
+                                    }}
+                                    className="w-full bg-transparent border-b border-white/20 text-xs font-mono tracking-wider pb-1 focus:outline-none focus:border-white/50 placeholder:text-white/30"
+                                  />
+                                </div>
+                                <div className="w-16">
+                                  <label className="text-[8px] uppercase tracking-wider opacity-50">CVV</label>
+                                  <input
+                                    type="password"
+                                    placeholder="•••"
+                                    value={cardCvv}
+                                    onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                    className="w-full bg-transparent border-b border-white/20 text-xs font-mono tracking-wider pb-1 focus:outline-none focus:border-white/50 placeholder:text-white/30"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-[9px] text-muted-foreground text-center italic">Demo mode — no real charges will be made</p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                       {/* Order Summary */}
                       <div className="space-y-1.5 pt-1">
                         <div className="flex justify-between items-center text-xs text-foreground/80">
@@ -569,16 +666,30 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                 )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Amount:</span> <span className="font-bold text-accent">${orderSuccess.total.toFixed(2)}</span></div>
               </div>
-              <button
-                onClick={() => setOrderSuccess(null)}
-                className="w-full py-2 bg-accent text-white text-xs font-semibold rounded-xl hover:shadow-md transition-all cursor-pointer"
-              >
-                Close / Keep Browsing
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setReceiptOrder(orderSuccess);
+                    setOrderSuccess(null);
+                  }}
+                  className="flex-1 py-2 bg-secondary text-foreground text-xs font-semibold rounded-xl hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-border/30"
+                >
+                  <Receipt className="w-3.5 h-3.5" /> View Bill
+                </button>
+                <button
+                  onClick={() => setOrderSuccess(null)}
+                  className="flex-1 py-2 bg-accent text-white text-xs font-semibold rounded-xl hover:shadow-md transition-all cursor-pointer"
+                >
+                  Keep Browsing
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Receipt / Bill Modal */}
+      <ReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
 
     </div>
   );

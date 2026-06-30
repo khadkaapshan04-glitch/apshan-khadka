@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { X, Mail, Shield, User, ChefHat, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Mail, Shield, User, ChefHat, Lock, ArrowLeft } from 'lucide-react';
 import { db } from '../lib/supabaseDb';
 
 interface AuthModalProps {
@@ -37,6 +38,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialView = 'signin',
   initialEmail = '',
 }) => {
+  const navigate = useNavigate();
   const [view, setView] = useState<ModalView>(initialView);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -177,6 +179,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         >
           <X className="w-5 h-5" />
         </button>
+
+        {view !== 'signin' && (
+          <button
+            onClick={() => {
+              setView('signin');
+              setError('');
+              setSuccessMessage('');
+            }}
+            className="absolute top-4 left-4 text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-accent/10 cursor-pointer flex items-center gap-1 text-xs font-semibold"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+        )}
+
+        {view === 'signin' && (
+          <button
+            onClick={() => {
+              onClose();
+              navigate('/');
+            }}
+            className="absolute top-4 left-4 text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-accent/10 cursor-pointer flex items-center gap-1 text-xs font-semibold"
+          >
+            <ArrowLeft className="w-4 h-4" /> Home
+          </button>
+        )}
 
         <div className="p-6 md:p-8">
           <div className="text-center mb-6">
@@ -364,65 +391,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
           </div>
 
-          {view !== 'forgot' && view !== 'reset_password' && (
-            <>
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border/20" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-3 text-muted-foreground text-[10px] tracking-wider font-semibold">Demo Role Logins</span>
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleQuickLogin('admin@flavore.com')}
-                  disabled={loading}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border/10 text-left transition-all text-xs font-medium text-foreground hover:border-accent/20 cursor-pointer group disabled:opacity-50"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Shield className="w-4 h-4 text-accent group-hover:scale-105 transition-transform" />
-                    <div>
-                      <div className="font-semibold text-foreground">Admin Portal</div>
-                      <div className="text-[10px] text-muted-foreground">Manage menu, reservations & sales</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-accent/80 font-bold bg-accent/10 px-2 py-0.5 rounded-full">admin@flavore.com</span>
-                </button>
-
-                <button
-                  onClick={() => handleQuickLogin('staff@flavore.com')}
-                  disabled={loading}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border/10 text-left transition-all text-xs font-medium text-foreground hover:border-accent/20 cursor-pointer group disabled:opacity-50"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <ChefHat className="w-4 h-4 text-accent group-hover:scale-105 transition-transform" />
-                    <div>
-                      <div className="font-semibold text-foreground">Kitchen / Staff Portal</div>
-                      <div className="text-[10px] text-muted-foreground">Update order statuses in real-time</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-accent/80 font-bold bg-accent/10 px-2 py-0.5 rounded-full">staff@flavore.com</span>
-                </button>
-
-                <button
-                  onClick={() => handleQuickLogin('customer@flavore.com')}
-                  disabled={loading}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border/10 text-left transition-all text-xs font-medium text-foreground hover:border-accent/20 cursor-pointer group disabled:opacity-50"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <User className="w-4 h-4 text-accent group-hover:scale-105 transition-transform" />
-                    <div>
-                      <div className="font-semibold text-foreground">Customer Account</div>
-                      <div className="text-[10px] text-muted-foreground">Book tables and order gourmet meals</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-accent/80 font-bold bg-accent/10 px-2 py-0.5 rounded-full">customer@flavore.com</span>
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </motion.div>
     </div>

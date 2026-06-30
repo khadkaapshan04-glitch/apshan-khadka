@@ -38,7 +38,7 @@ export interface RestaurantTable {
   id: string;
   number: string;
   capacity: number;
-  type: 'booth' | 'standard' | 'outdoor';
+  type: 'corner' | 'middle' | 'bar';
   position: { x: number; y: number }; // Percentage based for layout
 }
 
@@ -77,18 +77,18 @@ const StorageWrapper = {
 
 // Initial Table Data
 const INITIAL_TABLES: RestaurantTable[] = [
-  { id: 't1', number: '1', capacity: 2, type: 'standard', position: { x: 20, y: 20 } },
-  { id: 't2', number: '2', capacity: 2, type: 'standard', position: { x: 40, y: 20 } },
-  { id: 't3', number: '3', capacity: 4, type: 'booth', position: { x: 60, y: 20 } },
-  { id: 't4', number: '4', capacity: 4, type: 'booth', position: { x: 80, y: 20 } },
-  { id: 't5', number: '5', capacity: 6, type: 'standard', position: { x: 20, y: 50 } },
-  { id: 't6', number: '6', capacity: 4, type: 'standard', position: { x: 40, y: 50 } },
-  { id: 't7', number: '7', capacity: 2, type: 'standard', position: { x: 60, y: 50 } },
-  { id: 't8', number: '8', capacity: 2, type: 'standard', position: { x: 80, y: 50 } },
-  { id: 't9', number: '9', capacity: 8, type: 'booth', position: { x: 20, y: 80 } },
-  { id: 't10', number: '10', capacity: 4, type: 'standard', position: { x: 50, y: 80 } },
-  { id: 't11', number: '11', capacity: 2, type: 'outdoor', position: { x: 80, y: 80 } },
-  { id: 't12', number: '12', capacity: 2, type: 'outdoor', position: { x: 90, y: 80 } },
+  { id: 't1', number: '1', capacity: 2, type: 'middle', position: { x: 20, y: 20 } },
+  { id: 't2', number: '2', capacity: 2, type: 'middle', position: { x: 40, y: 20 } },
+  { id: 't3', number: '3', capacity: 4, type: 'corner', position: { x: 60, y: 20 } },
+  { id: 't4', number: '4', capacity: 4, type: 'corner', position: { x: 80, y: 20 } },
+  { id: 't5', number: '5', capacity: 6, type: 'middle', position: { x: 20, y: 50 } },
+  { id: 't6', number: '6', capacity: 4, type: 'middle', position: { x: 40, y: 50 } },
+  { id: 't7', number: '7', capacity: 2, type: 'middle', position: { x: 60, y: 50 } },
+  { id: 't8', number: '8', capacity: 2, type: 'middle', position: { x: 80, y: 50 } },
+  { id: 't9', number: '9', capacity: 8, type: 'corner', position: { x: 20, y: 80 } },
+  { id: 't10', number: '10', capacity: 4, type: 'middle', position: { x: 50, y: 80 } },
+  { id: 't11', number: '11', capacity: 2, type: 'bar', position: { x: 80, y: 80 } },
+  { id: 't12', number: '12', capacity: 2, type: 'bar', position: { x: 90, y: 80 } },
 ];
 
 // Initial Menu Data

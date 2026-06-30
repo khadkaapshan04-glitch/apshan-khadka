@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag, DollarSign, CalendarDays, UtensilsCrossed,
   TrendingUp, Clock, ChevronDown, ChevronUp, Star, Receipt,
-  Calendar, Users, MapPin, ArrowUpRight, Sparkles
+  Calendar, Users, MapPin, ArrowUpRight, Sparkles, Printer
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -12,6 +12,7 @@ import {
 import { db } from '../lib/supabaseDb';
 import { Order, Reservation, UserProfile } from '../lib/types';
 import { FloatingFood3D } from '../components/FloatingFood3D';
+import { ReceiptModal } from '../components/ReceiptModal';
 
 interface DashboardPageProps {
   currentUser: UserProfile | null;
@@ -142,6 +143,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
   const [userReservations, setUserReservations] = useState<Reservation[]>([]);
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
 
   /* Fetch data */
   useEffect(() => {
@@ -800,6 +802,16 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                                 )}
                               </div>
                             )}
+
+                            {/* View Bill Button */}
+                            <div className="mt-4 flex justify-end">
+                              <button
+                                onClick={() => setReceiptOrder(order)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-secondary text-foreground text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-accent hover:text-white transition-all cursor-pointer border border-border/30"
+                              >
+                                <Printer className="w-3.5 h-3.5" /> View Bill
+                              </button>
+                            </div>
                           </div>
                         </motion.div>
                       )}
@@ -894,7 +906,10 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+    </div>
+
+      {/* Receipt Modal */}
+      <ReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
     </div>
   );
 }

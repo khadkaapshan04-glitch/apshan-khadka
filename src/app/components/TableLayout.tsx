@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { RestaurantTable } from '../lib/types';
 import { Users, Info } from 'lucide-react';
 
@@ -78,15 +78,16 @@ export const TableLayout: React.FC<TableLayoutProps> = ({
             <motion.button
               key={table.id}
               type="button"
-              whileHover={isAvailable && isSuitable ? { scale: 1.05 } : {}}
-              whileTap={isAvailable && isSuitable ? { scale: 0.95 } : {}}
+              initial={{ x: "-50%", y: "-50%" }}
+              animate={{ x: "-50%", y: "-50%" }}
+              whileHover={isAvailable && isSuitable ? { scale: 1.05, x: "-50%", y: "-50%" } : { x: "-50%", y: "-50%" }}
+              whileTap={isAvailable && isSuitable ? { scale: 0.95, x: "-50%", y: "-50%" } : { x: "-50%", y: "-50%" }}
               onClick={() => isAvailable && isSuitable && onSelectTable(table.id)}
               disabled={!isAvailable || !isSuitable}
               className={`absolute flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 ${tableSize} ${statusColor}`}
               style={{
                 left: `${table.position.x}%`,
-                top: `${table.position.y}%`,
-                transform: 'translate(-50%, -50%)'
+                top: `${table.position.y}%`
               }}
             >
               <span className="text-xs font-bold">T-{table.number}</span>
@@ -102,6 +103,18 @@ export const TableLayout: React.FC<TableLayoutProps> = ({
                   animate={{ opacity: 0.4 }}
                 />
               )}
+              <AnimatePresence>
+                {isSelected && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, x: "-50%" }}
+                    animate={{ opacity: 1, y: -50, x: "-50%" }}
+                    exit={{ opacity: 0, y: 10, x: "-50%" }}
+                    className="absolute top-0 left-1/2 whitespace-nowrap bg-foreground text-background text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-xl pointer-events-none z-50 flex items-center gap-1.5 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-foreground capitalize"
+                  >
+                    {table.type} Table
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.button>
           );
         })}

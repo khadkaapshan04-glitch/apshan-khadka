@@ -5,19 +5,22 @@ import {
 } from 'recharts';
 import { 
   Trophy, DollarSign, Calendar, ShoppingBag, Star, Plus, Edit3, Trash2, Check, X,
-  Search, Eye, ShieldAlert, CheckCircle2, ChevronRight, Sliders
+  Search, Eye, ShieldAlert, CheckCircle2, ChevronRight, Sliders, Printer
 } from 'lucide-react';
 import { db } from '../lib/supabaseDb';
-import { MenuItem, Order, Reservation, RestaurantTable, toRestaurantTableWithPosition } from '../lib/types';
+import { MenuItem, Order, Reservation, RestaurantTable, toRestaurantTableWithPosition, UserProfile } from '../lib/types';
+import { ReceiptModal } from './ReceiptModal';
 
 export const AdminView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'tables'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'tables' | 'orders' | 'users'>('analytics');
   
   // States
   const [orders, setOrders] = useState<Order[]>([]);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   
   // CRUD states
   const [isEditing, setIsEditing] = useState<MenuItem | null>(null);
@@ -28,7 +31,7 @@ export const AdminView: React.FC = () => {
   const [isCreatingTable, setIsCreatingTable] = useState(false);
   const [tableNum, setTableNum] = useState('');
   const [tableCapacity, setTableCapacity] = useState(2);
-  const [tableType, setTableType] = useState<'booth' | 'standard' | 'outdoor'>('standard');
+  const [tableType, setTableType] = useState<'front table' | 'window' | 'corner' | 'middle' | 'bar'>('middle');
   const [tablePosX, setTablePosX] = useState(50);
   const [tablePosY, setTablePosY] = useState(50);
   const [crudName, setCrudName] = useState('');
@@ -41,18 +44,29 @@ export const AdminView: React.FC = () => {
   // Reservation assignment state
   const [tableAssignment, setTableAssignment] = useState<{ [resId: string]: string }>({});
 
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    const success = await db.updateProfileRole(userId, newRole);
+    if (success) {
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    } else {
+      alert('Failed to update user role.');
+    }
+  };
+
   const refreshData = async () => {
     try {
-      const [ordersData, menuData, reservationsData, tablesData] = await Promise.all([
+      const [ordersData, menuData, reservationsData, tablesData, usersData] = await Promise.all([
         db.getOrders(),
         db.getMenu(),
         db.getReservations(),
-        db.getTables()
+        db.getTables(),
+        db.getAllProfiles()
       ]);
       setOrders(ordersData);
       setMenu(menuData);
       setReservations(reservationsData);
       setTables(tablesData.map(toRestaurantTableWithPosition));
+      setUsers(usersData);
     } catch (e) {
       console.error('Error refreshing data from Supabase:', e);
     }
@@ -234,8 +248,8 @@ export const AdminView: React.FC = () => {
   })();
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto px-6 lg:px-10 py-6">
-      
+    <>
+      <div className="space-y-8 max-w-7xl mx-auto px-6 lg:px-10 py-6">
       {/* Tab Switcher Headers */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border/20 pb-4 gap-4">
         <div>
@@ -246,9 +260,11 @@ export const AdminView: React.FC = () => {
         <div className="flex bg-secondary p-1 rounded-xl">
           {[
             { id: 'analytics', label: 'Overview' },
+            { id: 'orders', label: 'Orders' },
             { id: 'menu', label: 'Menu List' },
             { id: 'reservations', label: 'Reservations' },
-            { id: 'tables', label: 'Tables' }
+            { id: 'tables', label: 'Tables' },
+            { id: 'users', label: 'Staff' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -708,9 +724,11 @@ export const AdminView: React.FC = () => {
                         value={tableType} onChange={e => setTableType(e.target.value as any)}
                         className="w-full px-3.5 py-2 rounded-xl bg-secondary border border-border/30 text-xs focus:outline-none focus:border-accent"
                       >
-                        <option value="standard">Standard</option>
-                        <option value="booth">Booth</option>
-                        <option value="outdoor">Outdoor</option>
+                        <option value="front table">Front Table</option>
+                        <option value="window">Window</option>
+                        <option value="corner">Corner</option>
+                        <option value="middle">Middle</option>
+                        <option value="bar">Bar</option>
                       </select>
                     </div>
 
@@ -805,6 +823,185 @@ export const AdminView: React.FC = () => {
         </motion.div>
       )}
 
+      {/* ── Orders Management Tab ── */}
+      {activeTab === 'orders' && (
+        <motion.div
+          key="orders"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          <div className="bg-card border border-border/20 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-accent" />
+                Order Management
+              </h3>
+              <span className="text-[10px] font-bold text-muted-foreground bg-secondary px-3 py-1 rounded-lg">
+                {orders.length} Total Orders
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-secondary/50 text-muted-foreground font-semibold">
+                  <tr>
+                    <th className="px-4 py-3 rounded-l-lg">Order ID</th>
+                    <th className="px-4 py-3">Customer</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Items</th>
+                    <th className="px-4 py-3">Total</th>
+                    <th className="px-4 py-3">Payment</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 rounded-r-lg">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/20">
+                  {orders.map(order => (
+                    <tr key={order.id} className="hover:bg-secondary/30 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs font-bold text-foreground">
+                        #{(order.id).slice(0, 8).toUpperCase()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-xs font-medium text-foreground">{order.customerName || order.customer_name}</p>
+                          <p className="text-[10px] text-muted-foreground">{order.customerEmail || order.customer_email}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-[10px] font-semibold uppercase bg-accent/8 text-accent px-2 py-0.5 rounded-md border border-accent/15">
+                          {order.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate">
+                        {order.items.map((it: any) => `${it.menuItem?.name || it.name} ×${it.quantity}`).join(', ')}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-bold text-foreground">
+                        ${order.total.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${
+                          (order as any).payment_status === 'paid' || (order as any).paymentStatus === 'paid'
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                            : 'bg-amber-50 text-amber-600 border-amber-200'
+                        }`}>
+                          {(order as any).payment_status || (order as any).paymentStatus || 'pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          className="bg-secondary text-foreground border border-border rounded-lg px-2 py-1 text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent"
+                          value={order.status}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value as any;
+                            const result = await db.updateOrderStatus(order.id, newStatus);
+                            if (result) {
+                              setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
+                            } else {
+                              alert('Failed to update order status.');
+                            }
+                          }}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="preparing">Preparing</option>
+                          <option value="ready">Ready</option>
+                          <option value="out-for-delivery">Out for Delivery</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => setReceiptOrder(order)}
+                          className="p-1.5 hover:bg-accent/10 hover:text-accent rounded-lg transition-colors cursor-pointer text-muted-foreground"
+                          title="View Bill"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {orders.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                        No orders found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Users / Staff Management Tab ── */}
+      {activeTab === 'users' && (
+        <motion.div
+          key="users"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          <div className="bg-card border border-border/20 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
+                <Users className="w-5 h-5 text-accent" />
+                Staff & User Management
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-secondary/50 text-muted-foreground font-semibold">
+                  <tr>
+                    <th className="px-4 py-3 rounded-l-lg">User Name</th>
+                    <th className="px-4 py-3">Email Address</th>
+                    <th className="px-4 py-3">Joined Date</th>
+                    <th className="px-4 py-3 rounded-r-lg">Account Role</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/20">
+                  {users.map(user => (
+                    <tr key={user.id} className="hover:bg-secondary/30 transition-colors">
+                      <td className="px-4 py-3 font-medium text-foreground">{user.fullName || 'Unknown'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          className="bg-secondary text-foreground border border-border rounded-lg px-2 py-1 text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent"
+                          value={user.role}
+                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        >
+                          <option value="customer">Customer</option>
+                          <option value="staff">Staff</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                        No users found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
     </div>
+
+      {/* Receipt Modal */}
+      <ReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
+    </>
   );
 };

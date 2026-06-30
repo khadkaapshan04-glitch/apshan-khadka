@@ -95,6 +95,10 @@ const normalizeOrder = (order: any): any => ({
   deliveryNotes: order.deliveryNotes ?? order.delivery_notes ?? undefined,
   estimated_delivery: order.estimated_delivery ?? order.estimatedDelivery ?? undefined,
   estimatedDelivery: order.estimatedDelivery ?? order.estimated_delivery ?? undefined,
+  payment_method: order.payment_method ?? order.paymentMethod ?? 'cash',
+  paymentMethod: order.paymentMethod ?? order.payment_method ?? 'cash',
+  payment_status: order.payment_status ?? order.paymentStatus ?? 'pending',
+  paymentStatus: order.paymentStatus ?? order.payment_status ?? 'pending',
   user_id: order.user_id ?? undefined,
   created_at: order.created_at,
 });
@@ -433,6 +437,8 @@ export const db = {
       delivery_address: orderData.delivery_address ?? orderData.deliveryAddress ?? null,
       delivery_phone: orderData.delivery_phone ?? orderData.deliveryPhone ?? null,
       delivery_notes: orderData.delivery_notes ?? orderData.deliveryNotes ?? null,
+      payment_method: orderData.payment_method ?? orderData.paymentMethod ?? 'cash',
+      payment_status: orderData.payment_method === 'cash' ? 'pending' : 'paid',
       user_id: session?.user?.id || null,
     };
 
@@ -485,6 +491,10 @@ export const db = {
       deliveryNotes: data.delivery_notes ?? undefined,
       estimated_delivery: data.estimated_delivery ?? undefined,
       estimatedDelivery: data.estimated_delivery ?? undefined,
+      payment_method: data.payment_method ?? 'cash',
+      paymentMethod: data.payment_method ?? 'cash',
+      payment_status: data.payment_status ?? 'pending',
+      paymentStatus: data.payment_status ?? 'pending',
       user_id: data.user_id ?? undefined,
       created_at: data.created_at,
     };
@@ -499,8 +509,9 @@ export const db = {
       .single();
 
     if (error || !data) {
-      console.error('Error updating order status:', error);
-      return null;
+      console.warn('Updating order status locally because Supabase failed:', error);
+      const localUpdated = localDb.updateOrderStatus(id, status);
+      return localUpdated ? normalizeOrder(localUpdated) : null;
     }
 
     const items = ((data.items as unknown as any[]) || []).map(it => ({
@@ -813,7 +824,7 @@ export const db = {
     const { data: reservations, error } = await withReadTimeout(
       supabase
         .from('reservations')
-        .select('table_id')
+        .select('table_id, time')
         .eq('date', date)
         .neq('status', 'cancelled'),
       'Fetching reserved tables'
@@ -826,8 +837,17 @@ export const db = {
       );
     }
 
+    const reqHour = parseInt(time.split(':')[0], 10) || 0;
+    
     const reservedTableIds = new Set(
-      (reservations ?? []).map(r => r.table_id).filter(Boolean)
+      (reservations ?? [])
+        .filter(r => {
+          if (!r.time) return true;
+          const resHour = parseInt(r.time.split(':')[0], 10) || 0;
+          return Math.abs(resHour - reqHour) < 2; // Block table if booked within 2 hours
+        })
+        .map(r => r.table_id)
+        .filter(Boolean)
     );
 
     return suitableTables.filter(t => !reservedTableIds.has(t.id));
@@ -842,6 +862,39 @@ export const db = {
 
   setCart: (cart: { menuItem: MenuItem; quantity: number }[]): void => {
     StorageWrapper.setItem('flavore_cart', JSON.stringify(cart));
+  },
+
+  getAllProfiles: async (): Promise<UserProfile[]> => {
+    const { data, error } = await withReadTimeout(
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      'Fetching profiles'
+    ).catch(error => ({ data: null, error }));
+
+    if (error || !data) {
+      console.warn('Failed to fetch profiles:', error);
+      return [];
+    }
+
+    return data.map(p => ({
+      id: p.id,
+      email: p.email,
+      fullName: p.full_name,
+      role: p.role,
+      createdAt: p.created_at,
+    }));
+  },
+
+  updateProfileRole: async (userId: string, newRole: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Failed to update profile role:', error);
+      return false;
+    }
+    return true;
   },
 
   // ── Password Reset Services ──

@@ -18,18 +18,18 @@ on conflict do nothing;
 
 -- ─── Seed Restaurant Tables ───
 insert into public.restaurant_tables (number, capacity, type, position_x, position_y) values
-  ('1', 2, 'standard', 20, 20),
-  ('2', 2, 'standard', 40, 20),
-  ('3', 4, 'booth', 60, 20),
-  ('4', 4, 'booth', 80, 20),
-  ('5', 6, 'standard', 20, 50),
-  ('6', 4, 'standard', 40, 50),
-  ('7', 2, 'standard', 60, 50),
-  ('8', 2, 'standard', 80, 50),
-  ('9', 8, 'booth', 20, 80),
-  ('10', 4, 'standard', 50, 80),
-  ('11', 2, 'outdoor', 80, 80),
-  ('12', 2, 'outdoor', 90, 80)
+  ('1', 2, 'middle', 20, 20),
+  ('2', 2, 'middle', 40, 20),
+  ('3', 4, 'corner', 60, 20),
+  ('4', 4, 'corner', 80, 20),
+  ('5', 6, 'middle', 20, 50),
+  ('6', 4, 'middle', 40, 50),
+  ('7', 2, 'middle', 60, 50),
+  ('8', 2, 'middle', 80, 50),
+  ('9', 8, 'corner', 20, 80),
+  ('10', 4, 'middle', 50, 80),
+  ('11', 2, 'bar', 80, 80),
+  ('12', 2, 'bar', 90, 80)
 on conflict do nothing;
 
 
