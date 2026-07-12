@@ -1113,7 +1113,7 @@ export const AdminView: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 print:grid-cols-3 print:gap-8">
             {tables.map(table => {
-              const qrUrl = `${window.location.origin}/menu?table=${table.number}`;
+              const qrUrl = `https://flavouree.vercel.app/menu?table=${table.number}`;
               return (
                 <div key={table.id} className="bg-card border border-border/20 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
                   <div className="mb-4 p-2 bg-white rounded-xl shadow-sm border border-border/10">
