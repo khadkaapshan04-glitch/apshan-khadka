@@ -343,7 +343,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
               <OrbitalRing3D />
 
               <motion.div
-                className="relative z-20 w-[250px] h-[250px] sm:w-[320px] sm:h-[320px] md:w-[400px] md:h-[400px] lg:w-[490px] lg:h-[490px] mx-auto"
+                className="relative z-20 w-[250px] h-[250px] sm:w-[320px] sm:h-[320px] md:w-[400px] md:h-[400px] lg:w-[490px] lg:h-[490px] mx-auto md:mx-0"
                 animate={{
                   y: [0, -10, 0],
                   rotateX: -mousePos.y,
