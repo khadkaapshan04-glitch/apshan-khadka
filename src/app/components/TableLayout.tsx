@@ -39,7 +39,8 @@ export const TableLayout: React.FC<TableLayoutProps> = ({
         </div>
       </div>
 
-      <div className="relative w-full aspect-[16/10] bg-secondary/20 rounded-3xl border border-border/30 overflow-hidden p-8">
+      <div className="w-full overflow-x-auto pb-4">
+        <div className="relative min-w-[600px] w-full aspect-[16/10] bg-secondary/20 rounded-3xl border border-border/30 overflow-hidden p-8">
         {/* Entrance Marker */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-border/40 px-6 py-1 rounded-b-xl text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
           Entrance
@@ -118,6 +119,7 @@ export const TableLayout: React.FC<TableLayoutProps> = ({
             </motion.button>
           );
         })}
+      </div>
       </div>
 
       <div className="bg-accent/5 border border-accent/20 rounded-2xl p-4 flex items-start gap-3">

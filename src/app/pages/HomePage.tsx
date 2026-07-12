@@ -101,7 +101,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
   };
 
   return (
-    <div className="pt-[72px] min-h-screen" onMouseMove={handleMouseMove}>
+    <div className="pt-[72px] min-h-screen overflow-x-hidden" onMouseMove={handleMouseMove}>
       <section className="relative min-h-screen flex items-center">
         {/* ── 3D Animated Background ── */}
         <Hero3DBackground mousePos={mousePos} />
@@ -110,7 +110,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
         <WindAndGrass />
 
         {/* ── Animated corner arc ── */}
-        <div className="absolute top-0 right-0 w-[480px] h-[480px] pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-0 w-[280px] md:w-[480px] h-[280px] md:h-[480px] pointer-events-none overflow-hidden">
           <motion.svg
             viewBox="0 0 400 400"
             className="w-full h-full opacity-[0.07]"
@@ -176,7 +176,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
         ))}
 
         <div className="max-w-7xl mx-auto px-6 lg:px-10 w-full">
-          <div className="grid lg:grid-cols-2 items-center gap-8 py-14 lg:py-20">
+          <div className="grid lg:grid-cols-2 items-center gap-6 md:gap-8 py-8 md:py-14 lg:py-20">
             <motion.div
               variants={stagger}
               initial="hidden"
@@ -194,7 +194,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
 
               <motion.h1 variants={fadeUp} className="font-display leading-[1.08] mb-5">
                 <motion.span
-                  className="block text-[3.1rem] lg:text-[4rem] font-semibold text-foreground"
+                  className="block text-[2rem] sm:text-[2.6rem] md:text-[3.1rem] lg:text-[4rem] font-semibold text-foreground"
                   animate={{
                     backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                   }}
@@ -209,7 +209,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                 >
                   Delicious Food,
                 </motion.span>
-                <span className="block text-[3.1rem] lg:text-[4rem] font-semibold text-foreground">
+                <span className="block text-[2rem] sm:text-[2.6rem] md:text-[3.1rem] lg:text-[4rem] font-semibold text-foreground">
                   Perfect <span className="text-accent italic">Experience</span>
                 </span>
               </motion.h1>
@@ -222,7 +222,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
               </motion.p>
 
               {/* ── 3D Tilt Feature Cards ── */}
-              <motion.div variants={stagger} className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-[600px]">
+              <motion.div variants={stagger} className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 max-w-[600px]">
                 {features.map((f) => (
                   <Tilt3DCard
                     key={f.title}
@@ -284,7 +284,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
               />
 
               {/* Animated botanical/plant SVG */}
-              <div className="absolute left-[4%] top-1/2 -translate-y-[48%] w-44 h-60 pointer-events-none z-10">
+              <div className="absolute left-[4%] top-1/2 -translate-y-[48%] w-28 md:w-44 h-40 md:h-60 pointer-events-none z-10 hidden sm:block">
                 <svg viewBox="0 0 200 300" className="w-full h-full" fill="none">
                   <motion.g
                     animate={{ rotate: [0, 1.8, -1, 0] }}
@@ -343,7 +343,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
               <OrbitalRing3D />
 
               <motion.div
-                className="relative z-20 w-[400px] h-[400px] lg:w-[490px] lg:h-[490px]"
+                className="relative z-20 w-[250px] h-[250px] sm:w-[320px] sm:h-[320px] md:w-[400px] md:h-[400px] lg:w-[490px] lg:h-[490px] mx-auto"
                 animate={{
                   y: [0, -10, 0],
                   rotateX: -mousePos.y,
@@ -388,7 +388,7 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
                 animate={{ opacity: 1, scale: 1, x: 0, rotateY: 0 }}
                 transition={{ delay: 1.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ scale: 1.06, rotateY: 10, z: 30 }}
-                className="absolute right-0 top-[38%] z-30 bg-white/96 backdrop-blur-sm rounded-2xl px-4 py-2.5 shadow-lg cursor-pointer flex items-center gap-2"
+                className="absolute right-0 top-[38%] z-30 bg-white/96 backdrop-blur-sm rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 shadow-lg cursor-pointer flex items-center gap-2 hidden sm:flex"
                 style={{ transformStyle: 'preserve-3d' }}
               >
                 <motion.div animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 1.4, repeat: Infinity }}>
