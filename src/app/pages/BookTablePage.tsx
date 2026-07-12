@@ -20,6 +20,7 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
   const [resDate, setResDate] = useState(new Date().toISOString().split('T')[0]);
   const [resTime, setResTime] = useState('18:00');
   const [resSuccess, setResSuccess] = useState<any | null>(null);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
   // Table Selection States
   const [allTables, setAllTables] = useState<any[]>([]);
@@ -63,6 +64,23 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
       setResEmail(currentUser.email);
     }
   }, [currentUser]);
+
+  const handleJoinWaitlist = async () => {
+    if (!currentUser) {
+      onOpenAuth();
+      return;
+    }
+    if (!resName || !resPhone) {
+      alert('Please provide your name and phone number to join the waitlist.');
+      return;
+    }
+    const entry = await db.joinWaitlist({ name: resName, phone: resPhone, party_size: resGuests });
+    if (entry) {
+      setWaitlistSuccess(true);
+    } else {
+      alert('Failed to join waitlist. Please try again.');
+    }
+  };
 
   const handleBookTable = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +161,29 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
           </div>
 
           <div className="bg-card border border-border/20 shadow-xl rounded-2xl overflow-hidden p-6 md:p-8">
-            {resSuccess ? (
+            {waitlistSuccess ? (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-8 space-y-4"
+              >
+                <div className="w-16 h-16 bg-yellow-500/10 text-yellow-500 rounded-full flex items-center justify-center mx-auto border border-yellow-500/20">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-foreground">You're on the Waitlist!</h3>
+                  <p className="text-xs text-muted-foreground mt-1">We will notify you when a table becomes available.</p>
+                </div>
+                <div>
+                  <button
+                    onClick={() => { setWaitlistSuccess(false); setResPhone(''); }}
+                    className="px-6 py-2 mt-4 bg-accent text-white text-xs font-semibold rounded-full hover:shadow-md transition-all cursor-pointer"
+                  >
+                    Back to Booking
+                  </button>
+                </div>
+              </motion.div>
+            ) : resSuccess ? (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -275,6 +315,19 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                       onSelectTable={setSelectedTableId}
                       guestCount={resGuests}
                     />
+                    
+                    {availableTableIds.length === 0 && (
+                      <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/30 p-5 rounded-xl text-center">
+                        <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400 mb-3">No tables are currently available for {resGuests} guests at {resTime}.</p>
+                        <button
+                          type="button"
+                          onClick={handleJoinWaitlist}
+                          className="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          Join Waitlist Instead
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center pt-6 border-t border-border/10">

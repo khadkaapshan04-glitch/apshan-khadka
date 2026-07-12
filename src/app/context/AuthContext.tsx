@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { db } from '../lib/supabaseDb';
+import { db, getLoginProfileCache, clearLoginProfileCache } from '../lib/supabaseDb';
 import type { UserProfile } from '../lib/types';
 
 interface AuthContextType {
@@ -61,6 +61,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const fetchProfile = async (authUser: any) => {
     try {
+      // Use the cached profile from db.login() if available,
+      // avoiding a duplicate network round-trip.
+      const cached = getLoginProfileCache();
+      if (cached && cached.id === authUser.id) {
+        clearLoginProfileCache();
+        setProfile(cached);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')

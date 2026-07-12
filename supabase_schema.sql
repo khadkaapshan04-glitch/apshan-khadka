@@ -9,7 +9,8 @@ create table if not exists public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   email text unique not null,
   full_name text not null default '',
-  role text not null default 'customer' check (role in ('customer', 'staff', 'admin')),
+  role text not null default 'customer' check (role in ('customer', 'waiter', 'kitchen', 'admin')),
+  loyalty_points integer not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -83,6 +84,9 @@ create table if not exists public.orders (
   delivery_phone text,
   delivery_notes text,
   estimated_delivery timestamptz,
+  discount_amount numeric not null default 0,
+  promo_code text,
+  loyalty_points_earned integer not null default 0,
   user_id uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -105,7 +109,41 @@ create table if not exists public.reservations (
 );
 
 
--- ─── 6. Helper Function: Get User Role ───
+-- ─── 6. Promo Codes Table ───
+create table if not exists public.promo_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text unique not null,
+  type text not null check (type in ('percent', 'flat')),
+  value numeric not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+
+-- ─── 7. Waitlist Table ───
+create table if not exists public.waitlist (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text not null default '',
+  party_size integer not null default 2,
+  status text not null default 'waiting' check (status in ('waiting', 'seated', 'cancelled')),
+  user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+
+-- ─── 8. Reviews Table ───
+create table if not exists public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  menu_item_id uuid references public.menu_items(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  comment text not null default '',
+  created_at timestamptz not null default now()
+);
+
+
+-- ─── 7. Helper Function: Get User Role ───
 create or replace function private.get_user_role()
 returns text
 language plpgsql
@@ -303,14 +341,65 @@ create policy "Admin and staff can update reservations"
   with check (private.is_admin_or_staff());
 
 -- Users can update own reservations (e.g. cancel)
-create policy "Users can update own reservations"
+create policy "Users can update own unconfirmed reservations"
   on public.reservations for update
   to authenticated
-  using (user_id = (select auth.uid()))
-  with check (user_id = (select auth.uid()));
+  using (user_id = (select auth.uid()) and status = 'pending')
+  with check (user_id = (select auth.uid()) and status = 'pending');
 
 -- Admin can delete reservations
 create policy "Admin can delete reservations"
   on public.reservations for delete
   to authenticated
   using (private.is_admin());
+
+
+-- ─── Reviews RLS ───
+alter table public.reviews enable row level security;
+
+-- Everyone can view reviews
+create policy "Anyone can view reviews"
+  on public.reviews for select
+  to anon, authenticated
+  using (true);
+
+-- Authenticated users can insert their own reviews
+create policy "Users can insert own reviews"
+  on public.reviews for insert
+  to authenticated
+  with check (user_id = (select auth.uid()));
+
+
+-- ─── Promo Codes RLS ───
+alter table public.promo_codes enable row level security;
+
+create policy "Anyone can view promo codes"
+  on public.promo_codes for select
+  to anon, authenticated
+  using (true);
+
+create policy "Admin can manage promo codes"
+  on public.promo_codes for all
+  to authenticated
+  using (private.is_admin())
+  with check (private.is_admin());
+
+
+-- ─── Waitlist RLS ───
+alter table public.waitlist enable row level security;
+
+create policy "Anyone can insert into waitlist"
+  on public.waitlist for insert
+  to anon, authenticated
+  with check (true);
+
+create policy "Users can view own waitlist entry"
+  on public.waitlist for select
+  to authenticated
+  using (user_id = (select auth.uid()));
+
+create policy "Admin and staff can manage waitlist"
+  on public.waitlist for all
+  to authenticated
+  using (private.is_admin_or_staff())
+  with check (private.is_admin_or_staff());

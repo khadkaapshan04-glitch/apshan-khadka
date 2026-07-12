@@ -251,7 +251,7 @@ export default function App() {
                   <motion.button
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
                     whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                    onClick={() => setIsAuthOpen(true)}
+                    onClick={() => { setAuthInitialView('signin'); setIsAuthOpen(true); }}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/70 text-sm font-medium text-foreground/75 hover:text-foreground hover:border-accent/40 transition-all cursor-pointer"
                   >
                     <User className="w-3.5 h-3.5" /> Login
@@ -260,7 +260,7 @@ export default function App() {
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }}
                     whileHover={{ scale: 1.04, boxShadow: "0 6px 22px rgba(212,165,116,0.4)" }}
                     whileTap={{ scale: 0.96 }}
-                    onClick={() => setIsAuthOpen(true)}
+                    onClick={() => { setAuthInitialView('signup'); setIsAuthOpen(true); }}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium shadow-md transition-all cursor-pointer"
                   >
                     <UserPlus className="w-3.5 h-3.5" /> Sign Up
@@ -374,13 +374,13 @@ export default function App() {
               {!currentUser ? (
                 <div className="p-6 border-t border-border/30 space-y-3">
                   <button
-                    onClick={() => { setIsSidebarOpen(false); setIsAuthOpen(true); }}
+                    onClick={() => { setIsSidebarOpen(false); setAuthInitialView('signin'); setIsAuthOpen(true); }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border/70 text-sm font-medium text-foreground/75 hover:text-foreground hover:border-accent/40 transition-all cursor-pointer"
                   >
                     <User className="w-4 h-4" /> Login
                   </button>
                   <button
-                    onClick={() => { setIsSidebarOpen(false); setIsAuthOpen(true); }}
+                    onClick={() => { setIsSidebarOpen(false); setAuthInitialView('signup'); setIsAuthOpen(true); }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-medium shadow-md transition-all cursor-pointer"
                   >
                     <UserPlus className="w-4 h-4" /> Sign Up
@@ -411,7 +411,18 @@ export default function App() {
           <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/reset-password" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
-          <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              authLoading ? (
+                <div className="min-h-screen flex items-center justify-center bg-background"><span className="w-8 h-8 border-4 border-accent/30 border-t-accent rounded-full animate-spin" /></div>
+              ) : currentUser ? (
+                <DashboardPage currentUser={currentUser} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } 
+          />
           <Route
             path="/kitchen"
             element={

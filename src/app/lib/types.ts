@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string;
   full_name: string;
   role: 'customer' | 'staff' | 'admin';
+  loyalty_points?: number;
   created_at?: string;
 }
 
@@ -18,6 +19,15 @@ export interface MenuItem {
   image_url: string;
   is_available: boolean;
   created_at?: string;
+}
+
+export interface Review {
+  id: string;
+  menu_item_id: string;
+  user_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
 }
 
 export interface OrderItem {
@@ -44,8 +54,30 @@ export interface Order {
   delivery_phone?: string;
   delivery_notes?: string;
   estimated_delivery?: string;
+  discount_amount?: number;
+  promo_code?: string;
+  loyalty_points_earned?: number;
   payment_method?: 'cash' | 'card' | 'digital-wallet';
   payment_status?: 'pending' | 'paid' | 'failed';
+  user_id?: string;
+  created_at: string;
+}
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  type: 'percent' | 'flat';
+  value: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  name: string;
+  phone: string;
+  party_size: number;
+  status: 'waiting' | 'seated' | 'cancelled';
   user_id?: string;
   created_at: string;
 }

@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CheckCircle2,
   Truck, UtensilsCrossed, PackageOpen, MapPin, Phone, MessageSquare, Clock,
-  CreditCard, Banknote, Wallet, Receipt
+  CreditCard, Banknote, Wallet, Receipt, Star
 } from 'lucide-react';
 import { db } from '../lib/supabaseDb';
 import { MenuItem, Order, UserProfile } from '../lib/types';
 import { ReceiptModal } from '../components/ReceiptModal';
+import { ReviewModal } from '../components/ReviewModal';
 
 interface MenuPageProps {
   currentUser: UserProfile | null;
@@ -20,6 +21,8 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>(db.getCart());
+  const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
+  const [reviewItem, setReviewItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     db.setCart(cart);
@@ -41,16 +44,44 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [cardCvv, setCardCvv] = useState('');
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
 
+  // Discounts & Loyalty
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; type: 'percent' | 'flat'; value: number } | null>(null);
+  const [promoError, setPromoError] = useState('');
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+
+  const fetchMenuAndRatings = async () => {
+    try {
+      const [menuData, reviewsData] = await Promise.all([
+        db.getMenu(),
+        db.getAllReviews()
+      ]);
+      setMenu(menuData);
+      
+      const ratingMap: Record<string, { avg: number; count: number; total: number }> = {};
+      reviewsData.forEach(r => {
+        if (!ratingMap[r.menu_item_id]) {
+          ratingMap[r.menu_item_id] = { avg: 0, count: 0, total: 0 };
+        }
+        ratingMap[r.menu_item_id].count += 1;
+        ratingMap[r.menu_item_id].total += r.rating;
+      });
+
+      const finalRatings: Record<string, { avg: number; count: number }> = {};
+      Object.keys(ratingMap).forEach(id => {
+        finalRatings[id] = {
+          avg: ratingMap[id].total / ratingMap[id].count,
+          count: ratingMap[id].count
+        };
+      });
+      setRatings(finalRatings);
+    } catch (e) {
+      console.error('Error fetching menu items:', e);
+    }
+  };
+
   useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const data = await db.getMenu();
-        setMenu(data);
-      } catch (e) {
-        console.error('Error fetching menu items:', e);
-      }
-    };
-    fetchMenu();
+    fetchMenuAndRatings();
   }, []);
 
   const categories = ['All', 'Starters', 'Mains', 'Desserts', 'Beverages'];
@@ -84,7 +115,34 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   };
 
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
-  const cartTotal = orderType === 'delivery' ? cartSubtotal + DELIVERY_FEE : cartSubtotal;
+  const deliveryFee = orderType === 'delivery' && cartSubtotal < 30 ? DELIVERY_FEE : 0;
+  
+  let discountAmount = 0;
+  if (appliedPromo) {
+    if (appliedPromo.type === 'percent') {
+      discountAmount = cartSubtotal * (appliedPromo.value / 100);
+    } else {
+      discountAmount = appliedPromo.value;
+    }
+  }
+  // 100 points = $1
+  const loyaltyDiscount = pointsToRedeem / 100;
+  discountAmount += loyaltyDiscount;
+  discountAmount = Math.min(discountAmount, cartSubtotal); // Cannot discount more than subtotal
+  
+  const cartTotal = cartSubtotal + deliveryFee - discountAmount;
+
+  const handleApplyPromo = async () => {
+    setPromoError('');
+    if (!promoCodeInput.trim()) return;
+    const promo = await db.validatePromoCode(promoCodeInput.trim());
+    if (promo) {
+      setAppliedPromo(promo);
+      setPromoCodeInput('');
+    } else {
+      setPromoError('Invalid or expired promo code');
+    }
+  };
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +176,9 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
         deliveryPhone: orderType === 'delivery' ? deliveryPhone : undefined,
         deliveryNotes: orderType === 'delivery' ? deliveryNotes : undefined,
         paymentMethod: paymentMethod,
+        discountAmount: discountAmount,
+        promoCode: appliedPromo?.code,
+        pointsRedeemed: pointsToRedeem
       });
 
       if (order) {
@@ -128,6 +189,8 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
         setDeliveryPhone('');
         setDeliveryNotes('');
         setTableNumber('');
+        setAppliedPromo(null);
+        setPointsToRedeem(0);
       } else {
         alert('Failed to place order. Please try again.');
       }
@@ -218,8 +281,22 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
 
                     {/* Content */}
                     <div className="p-4" style={{ transform: 'translateZ(30px)' }}>
-                      <h4 className="font-semibold text-foreground text-sm group-hover:text-accent transition-colors mb-1">{item.name}</h4>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3">{item.description}</p>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h4 className="font-semibold text-foreground text-sm group-hover:text-accent transition-colors">{item.name}</h4>
+                        {ratings[item.id] && (
+                          <div className="flex items-center gap-0.5 text-yellow-500 shrink-0 bg-yellow-500/10 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                            <Star className="w-3 h-3 fill-current" />
+                            {ratings[item.id].avg.toFixed(1)} <span className="text-muted-foreground ml-0.5 font-normal">({ratings[item.id].count})</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 mb-2">{item.description}</p>
+                      <button 
+                        onClick={() => setReviewItem(item)}
+                        className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground hover:text-accent transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <MessageSquare className="w-3 h-3" /> Leave Review
+                      </button>
                     </div>
                   </div>
 
@@ -562,6 +639,63 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                         )}
                       </AnimatePresence>
 
+                      {/* Promo Codes & Loyalty */}
+                      <div className="space-y-3 pt-2 border-t border-border/20">
+                        <div>
+                          <label className="block text-[10px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Promo Code</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={promoCodeInput}
+                              onChange={e => setPromoCodeInput(e.target.value.toUpperCase())}
+                              placeholder="e.g. SAVE20"
+                              className="flex-1 px-3 py-2 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent transition-colors"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleApplyPromo}
+                              className="px-3 py-2 bg-secondary text-foreground hover:bg-accent hover:text-white rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                          {promoError && <p className="text-red-500 text-[10px] mt-1">{promoError}</p>}
+                          {appliedPromo && (
+                            <div className="flex justify-between items-center bg-emerald-500/10 text-emerald-600 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-semibold">
+                              <span>Code applied: {appliedPromo.code}</span>
+                              <button type="button" onClick={() => setAppliedPromo(null)} className="hover:text-emerald-700">Remove</button>
+                            </div>
+                          )}
+                        </div>
+
+                        {currentUser && (currentUser.loyalty_points || 0) > 0 && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Loyalty Points (100 = $1)</label>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-muted-foreground">Available: {currentUser.loyalty_points} pts</span>
+                              {pointsToRedeem === 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const maxPointsUsable = Math.floor(cartSubtotal * 100);
+                                    const pointsAvailable = currentUser.loyalty_points || 0;
+                                    setPointsToRedeem(Math.min(pointsAvailable, maxPointsUsable));
+                                  }}
+                                  className="text-accent font-semibold hover:underline"
+                                >
+                                  Redeem Points
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-emerald-600 font-semibold">-{pointsToRedeem} pts</span>
+                                  <button type="button" onClick={() => setPointsToRedeem(0)} className="text-red-500 hover:underline">Cancel</button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Order Summary */}
                       <div className="space-y-1.5 pt-1">
                         <div className="flex justify-between items-center text-xs text-foreground/80">
@@ -583,6 +717,12 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                             )}
                           </div>
                         )}
+                        {discountAmount > 0 && (
+                          <div className="flex justify-between items-center text-xs text-emerald-600">
+                            <span>Discount</span>
+                            <span className="font-semibold">-${discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center text-sm font-bold text-foreground border-t border-border/20 pt-2">
                           <span>Total</span>
                           <span className="text-lg text-accent">
@@ -597,7 +737,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                       >
                         {orderType === 'delivery' && <Truck className="w-3.5 h-3.5" />}
                         {orderType === 'delivery' ? 'Place Delivery Order' : `Place Order`}
-                        {' '}(${(orderType === 'delivery' && cartSubtotal >= 30 ? cartSubtotal : cartTotal).toFixed(2)})
+                        {' '}(${cartTotal.toFixed(2)})
                       </button>
                     </form>
                   )}
@@ -690,7 +830,13 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
 
       {/* Receipt / Bill Modal */}
       <ReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
-
+      
+      <ReviewModal 
+        isOpen={!!reviewItem} 
+        onClose={() => setReviewItem(null)} 
+        menuItem={reviewItem} 
+        onReviewSubmitted={fetchMenuAndRatings}
+      />
     </div>
   );
 }

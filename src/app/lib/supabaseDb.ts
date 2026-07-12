@@ -154,6 +154,14 @@ const profileFromAuthUser = (user: any): UserProfile => ({
 });
 
 // ─────────────────────────────────────────────
+// Login profile cache – avoids a duplicate profiles fetch
+// when AuthContext's onAuthStateChange fires right after login.
+// ─────────────────────────────────────────────
+let _loginProfileCache: UserProfile | null = null;
+export const getLoginProfileCache = (): UserProfile | null => _loginProfileCache;
+export const clearLoginProfileCache = (): void => { _loginProfileCache = null; };
+
+// ─────────────────────────────────────────────
 // Database Service
 // ─────────────────────────────────────────────
 export const db = {
@@ -205,12 +213,14 @@ export const db = {
       return profileFromAuthUser(data.user);
     }
 
-    return {
+    const userProfile: UserProfile = {
       id: profile.id,
       email: profile.email,
       full_name: profile.full_name,
       role: profile.role as UserProfile['role'],
     };
+    _loginProfileCache = userProfile;
+    return userProfile;
   },
 
   signup: async (email: string, password: string, fullName: string): Promise<SignupResult | null> => {
@@ -346,6 +356,44 @@ export const db = {
   },
 
 
+  // ── Review Services ──
+
+  getReviews: async (menuItemId: string): Promise<any[]> => {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('menu_item_id', menuItemId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.warn('Error fetching reviews:', error);
+      return [];
+    }
+    return data;
+  },
+
+  submitReview: async (review: { menu_item_id: string; user_id: string; rating: number; comment: string }): Promise<any | null> => {
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert(review)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error submitting review:', error);
+      return null;
+    }
+    return data;
+  },
+
+  getAllReviews: async (): Promise<any[]> => {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*');
+    if (error) return [];
+    return data;
+  },
+
   // ── Order Services ──
 
   getOrders: async (): Promise<any[]> => {
@@ -437,6 +485,9 @@ export const db = {
       delivery_address: orderData.delivery_address ?? orderData.deliveryAddress ?? null,
       delivery_phone: orderData.delivery_phone ?? orderData.deliveryPhone ?? null,
       delivery_notes: orderData.delivery_notes ?? orderData.deliveryNotes ?? null,
+      discount_amount: orderData.discount_amount ?? orderData.discountAmount ?? 0,
+      promo_code: orderData.promo_code ?? orderData.promoCode ?? null,
+      loyalty_points_earned: Math.floor((orderData.total || 0) * 10),
       payment_method: orderData.payment_method ?? orderData.paymentMethod ?? 'cash',
       payment_status: orderData.payment_method === 'cash' ? 'pending' : 'paid',
       user_id: session?.user?.id || null,
@@ -457,6 +508,29 @@ export const db = {
     if (error || !data) {
       console.warn('Placing order locally because Supabase insert failed:', error);
       return normalizeOrder(localDb.placeOrder(orderData));
+    }
+
+    // Update loyalty points if user is logged in
+    if (session?.user?.id) {
+      const pointsEarned = insertData.loyalty_points_earned as number;
+      const pointsRedeemed = orderData.pointsRedeemed || 0;
+      const pointsDelta = pointsEarned - pointsRedeemed;
+
+      if (pointsDelta !== 0) {
+        // Fetch current profile to get current points
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('loyalty_points')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile) {
+          await supabase
+            .from('profiles')
+            .update({ loyalty_points: (profile.loyalty_points || 0) + pointsDelta })
+            .eq('id', session.user.id);
+        }
+      }
     }
 
     const items = ((data.items as unknown as any[]) || []).map(it => ({
@@ -830,14 +904,21 @@ export const db = {
       'Fetching reserved tables'
     ).catch(error => ({ data: null, error }));
 
+    const reqHour = parseInt(time.split(':')[0], 10) || 0;
+
     if (error) {
       console.warn('Using local table availability because Supabase reservation lookup failed:', error);
-      return getLocalTables().filter(table =>
-        localDb.getAvailableTables(date, time, guests).some(localTable => localTable.id === table.id)
+      const reservedTableIds = new Set(
+        localDb.getReservations()
+          .filter(r => r.date === date && r.status !== 'cancelled')
+          .filter(r => {
+            const resHour = parseInt(r.time.split(':')[0], 10) || 0;
+            return Math.abs(resHour - reqHour) < 2;
+          })
+          .map(r => r.tableId)
       );
+      return suitableTables.filter(t => !reservedTableIds.has(t.id));
     }
-
-    const reqHour = parseInt(time.split(':')[0], 10) || 0;
     
     const reservedTableIds = new Set(
       (reservations ?? [])
@@ -878,9 +959,9 @@ export const db = {
     return data.map(p => ({
       id: p.id,
       email: p.email,
-      fullName: p.full_name,
+      full_name: p.full_name,
       role: p.role,
-      createdAt: p.created_at,
+      created_at: p.created_at,
     }));
   },
 
@@ -972,5 +1053,60 @@ export const db = {
       console.error('[OTP Verify] Unexpected error:', err);
       return { success: false, error: err.message || 'Unexpected error occurred' };
     }
+  },
+
+  // ── Waitlist Services ──
+  getWaitlist: async (): Promise<any[]> => {
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.warn('Error fetching waitlist:', error);
+      return [];
+    }
+    return data;
+  },
+
+  joinWaitlist: async (entry: { name: string; phone: string; party_size: number }): Promise<any | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data, error } = await supabase
+      .from('waitlist')
+      .insert({
+        ...entry,
+        status: 'waiting',
+        user_id: session?.user?.id || null
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error joining waitlist:', error);
+      return null;
+    }
+    return data;
+  },
+
+  updateWaitlistStatus: async (id: string, status: 'waiting' | 'seated' | 'cancelled'): Promise<void> => {
+    const { error } = await supabase
+      .from('waitlist')
+      .update({ status })
+      .eq('id', id);
+    if (error) console.error('Error updating waitlist status:', error);
+  },
+
+  // ── Promo Code Services ──
+  validatePromoCode: async (code: string): Promise<any | null> => {
+    const { data, error } = await supabase
+      .from('promo_codes')
+      .select('*')
+      .eq('code', code.toUpperCase())
+      .eq('is_active', true)
+      .single();
+    
+    if (error || !data) {
+      return null;
+    }
+    return data;
   }
 };

@@ -12,7 +12,7 @@ import { MenuItem, Order, Reservation, RestaurantTable, toRestaurantTableWithPos
 import { ReceiptModal } from './ReceiptModal';
 
 export const AdminView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'tables' | 'orders' | 'users'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'waitlist' | 'tables' | 'orders' | 'users'>('analytics');
   
   // States
   const [orders, setOrders] = useState<Order[]>([]);
@@ -20,6 +20,7 @@ export const AdminView: React.FC = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<any[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [waitlist, setWaitlist] = useState<any[]>([]);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   
   // CRUD states
@@ -55,18 +56,20 @@ export const AdminView: React.FC = () => {
 
   const refreshData = async () => {
     try {
-      const [ordersData, menuData, reservationsData, tablesData, usersData] = await Promise.all([
+      const [ordersData, menuData, reservationsData, tablesData, usersData, waitlistData] = await Promise.all([
         db.getOrders(),
         db.getMenu(),
         db.getReservations(),
         db.getTables(),
-        db.getAllProfiles()
+        db.getAllProfiles(),
+        db.getWaitlist()
       ]);
       setOrders(ordersData);
       setMenu(menuData);
       setReservations(reservationsData);
       setTables(tablesData.map(toRestaurantTableWithPosition));
       setUsers(usersData);
+      setWaitlist(waitlistData);
     } catch (e) {
       console.error('Error refreshing data from Supabase:', e);
     }
@@ -263,6 +266,7 @@ export const AdminView: React.FC = () => {
             { id: 'orders', label: 'Orders' },
             { id: 'menu', label: 'Menu List' },
             { id: 'reservations', label: 'Reservations' },
+            { id: 'waitlist', label: 'Waitlist' },
             { id: 'tables', label: 'Tables' },
             { id: 'users', label: 'Staff' }
           ].map(tab => (
@@ -823,6 +827,94 @@ export const AdminView: React.FC = () => {
         </motion.div>
       )}
 
+      {/* ── Waitlist Management Tab ── */}
+      {activeTab === 'waitlist' && (
+        <motion.div
+          key="waitlist"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
+          <div className="bg-card border border-border/20 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-accent" />
+                Waitlist Management
+              </h3>
+              <span className="text-[10px] font-bold text-muted-foreground bg-secondary px-3 py-1 rounded-lg">
+                {waitlist.length} Total Entries
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead>
+                  <tr className="border-b border-border/20 bg-secondary/30 text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                    <th className="p-4">Name</th>
+                    <th className="p-4">Phone</th>
+                    <th className="p-4">Party Size</th>
+                    <th className="p-4">Date Joined</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/10">
+                  {waitlist.map((entry) => (
+                    <tr key={entry.id} className="text-foreground hover:bg-secondary/10 transition-colors">
+                      <td className="p-4 font-semibold">{entry.name}</td>
+                      <td className="p-4 font-mono text-muted-foreground text-xs">{entry.phone}</td>
+                      <td className="p-4">{entry.party_size} Guests</td>
+                      <td className="p-4 text-xs text-muted-foreground">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                          entry.status === 'seated' ? 'bg-emerald-500/10 text-emerald-600' :
+                          entry.status === 'cancelled' ? 'bg-red-500/10 text-red-500' :
+                          'bg-yellow-500/10 text-yellow-600'
+                        }`}>
+                          {entry.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        {entry.status === 'waiting' && (
+                          <>
+                            <button
+                              onClick={() => {
+                                db.updateWaitlistStatus(entry.id, 'seated').then(refreshData);
+                              }}
+                              className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              Seat
+                            </button>
+                            <button
+                              onClick={() => {
+                                db.updateWaitlistStatus(entry.id, 'cancelled').then(refreshData);
+                              }}
+                              className="px-3 py-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {waitlist.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">
+                        No waitlist entries found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* ── Orders Management Tab ── */}
       {activeTab === 'orders' && (
         <motion.div
@@ -966,10 +1058,10 @@ export const AdminView: React.FC = () => {
                 <tbody className="divide-y divide-border/20">
                   {users.map(user => (
                     <tr key={user.id} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-4 py-3 font-medium text-foreground">{user.fullName || 'Unknown'}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{user.full_name || 'Unknown'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="px-4 py-3">
                         <select
