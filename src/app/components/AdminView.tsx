@@ -10,9 +10,10 @@ import {
 import { db } from '../lib/supabaseDb';
 import { MenuItem, Order, Reservation, RestaurantTable, toRestaurantTableWithPosition, UserProfile } from '../lib/types';
 import { ReceiptModal } from './ReceiptModal';
+import { QRCodeSVG } from 'qrcode.react';
 
 export const AdminView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'waitlist' | 'tables' | 'orders' | 'users'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'reservations' | 'waitlist' | 'tables' | 'orders' | 'users' | 'qrcodes'>('analytics');
   
   // States
   const [orders, setOrders] = useState<Order[]>([]);
@@ -268,7 +269,8 @@ export const AdminView: React.FC = () => {
             { id: 'reservations', label: 'Reservations' },
             { id: 'waitlist', label: 'Waitlist' },
             { id: 'tables', label: 'Tables' },
-            { id: 'users', label: 'Staff' }
+            { id: 'users', label: 'Staff' },
+            { id: 'qrcodes', label: 'QR Codes' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -1086,6 +1088,47 @@ export const AdminView: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </motion.div>
+      )}
+      {/* Tab 8: QR Codes */}
+      {activeTab === 'qrcodes' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="flex justify-between items-end">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Table QR Codes</h3>
+              <p className="text-xs text-muted-foreground mt-1">Print these codes and place them on tables for self-service ordering.</p>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="px-4 py-2 bg-accent text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer print:hidden"
+            >
+              <Printer className="w-4 h-4" /> Print QR Codes
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 print:grid-cols-3 print:gap-8">
+            {tables.map(table => {
+              const qrUrl = `${window.location.origin}/menu?table=${table.number}`;
+              return (
+                <div key={table.id} className="bg-card border border-border/20 rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
+                  <div className="mb-4 p-2 bg-white rounded-xl shadow-sm border border-border/10">
+                    <QRCodeSVG value={qrUrl} size={120} level="H" includeMargin={true} />
+                  </div>
+                  <h4 className="font-display font-bold text-foreground text-lg mb-1">Table {table.number}</h4>
+                  <p className="text-[10px] text-muted-foreground break-all">{qrUrl}</p>
+                </div>
+              );
+            })}
+            {tables.length === 0 && (
+              <div className="col-span-full py-12 text-center text-muted-foreground">
+                No tables created yet. Go to the Tables tab to add some.
+              </div>
+            )}
           </div>
         </motion.div>
       )}

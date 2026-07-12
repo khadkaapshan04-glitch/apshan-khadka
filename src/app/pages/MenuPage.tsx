@@ -9,6 +9,7 @@ import { db } from '../lib/supabaseDb';
 import { MenuItem, Order, UserProfile } from '../lib/types';
 import { ReceiptModal } from '../components/ReceiptModal';
 import { ReviewModal } from '../components/ReviewModal';
+import { useLocation } from 'react-router-dom';
 
 interface MenuPageProps {
   currentUser: UserProfile | null;
@@ -18,6 +19,7 @@ interface MenuPageProps {
 const DELIVERY_FEE = 4.99;
 
 export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
+  const location = useLocation();
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>(db.getCart());
@@ -28,8 +30,11 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
     db.setCart(cart);
   }, [cart]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [orderType, setOrderType] = useState<'dine-in' | 'takeaway' | 'delivery'>('dine-in');
-  const [tableNumber, setTableNumber] = useState('');
+
+  // Initialize with URL param if it exists
+  const initialTable = new URLSearchParams(location.search).get('table') || '';
+  const [orderType, setOrderType] = useState<'dine-in' | 'takeaway' | 'delivery'>(initialTable ? 'dine-in' : 'dine-in');
+  const [tableNumber, setTableNumber] = useState(initialTable);
   const [orderSuccess, setOrderSuccess] = useState<Order | null>(null);
 
   // Delivery form fields
