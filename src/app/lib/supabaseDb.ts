@@ -965,7 +965,7 @@ export const db = {
     }));
   },
 
-  updateProfileRole: async (userId: string, newRole: string): Promise<boolean> => {
+  updateProfileRole: async (userId: string, newRole: string): Promise<{ success: boolean; error?: string }> => {
     const { error } = await supabase
       .from('profiles')
       .update({ role: newRole })
@@ -973,9 +973,41 @@ export const db = {
 
     if (error) {
       console.error('Failed to update profile role:', error);
-      return false;
+      return { success: false, error: error.message || 'Failed to update role' };
     }
-    return true;
+    return { success: true };
+  },
+
+  updateProfileRoleByEmail: async (email: string, newRole: string): Promise<{ success: boolean; error?: string }> => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // First find the user by email
+    const { data: profile, error: findError } = await supabase
+      .from('profiles')
+      .select('id, email, role')
+      .eq('email', normalizedEmail)
+      .single();
+
+    if (findError || !profile) {
+      console.error('Failed to find profile by email:', findError);
+      return { success: false, error: `No user found with email "${normalizedEmail}"` };
+    }
+
+    if (profile.role === newRole) {
+      return { success: false, error: `User already has the "${newRole}" role` };
+    }
+
+    // Update the role
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', profile.id);
+
+    if (updateError) {
+      console.error('Failed to update profile role by email:', updateError);
+      return { success: false, error: updateError.message || 'Failed to update role' };
+    }
+    return { success: true };
   },
 
   // ── Password Reset Services ──

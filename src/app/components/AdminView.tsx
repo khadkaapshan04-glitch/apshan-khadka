@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { 
   Trophy, DollarSign, Calendar, ShoppingBag, Star, Plus, Edit3, Trash2, Check, X,
-  Search, Eye, ShieldAlert, CheckCircle2, ChevronRight, Sliders, Printer
+  Search, Eye, ShieldAlert, CheckCircle2, ChevronRight, Sliders, Printer, Users
 } from 'lucide-react';
 import { db } from '../lib/supabaseDb';
 import { MenuItem, Order, Reservation, RestaurantTable, toRestaurantTableWithPosition, UserProfile } from '../lib/types';
@@ -46,18 +46,43 @@ export const AdminView: React.FC = () => {
   // Reservation assignment state
   const [tableAssignment, setTableAssignment] = useState<{ [resId: string]: string }>({});
 
+  // Direct role assignment state
+  const [assignEmail, setAssignEmail] = useState('');
+  const [assignRole, setAssignRole] = useState<'customer' | 'staff' | 'admin'>('staff');
+  const [assignStatus, setAssignStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [assignLoading, setAssignLoading] = useState(false);
+
   const handleRoleChange = async (userId: string, newRole: string) => {
-    const success = await db.updateProfileRole(userId, newRole);
-    if (success) {
+    const result = await db.updateProfileRole(userId, newRole);
+    if (result.success) {
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
     } else {
-      alert('Failed to update user role.');
+      alert(result.error || 'Failed to update user role.');
     }
+  };
+
+  const handleAssignRoleByEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignEmail.trim()) return;
+
+    setAssignLoading(true);
+    setAssignStatus(null);
+
+    const result = await db.updateProfileRoleByEmail(assignEmail, assignRole);
+
+    if (result.success) {
+      setAssignStatus({ type: 'success', message: `Successfully assigned "${assignRole}" role to ${assignEmail.trim().toLowerCase()}` });
+      setAssignEmail('');
+      refreshData(); // Refresh the table
+    } else {
+      setAssignStatus({ type: 'error', message: result.error || 'Failed to assign role' });
+    }
+    setAssignLoading(false);
   };
 
   const refreshData = async () => {
     try {
-      const [ordersData, menuData, reservationsData, tablesData, usersData, waitlistData] = await Promise.all([
+      const results = await Promise.allSettled([
         db.getOrders(),
         db.getMenu(),
         db.getReservations(),
@@ -65,12 +90,24 @@ export const AdminView: React.FC = () => {
         db.getAllProfiles(),
         db.getWaitlist()
       ]);
-      setOrders(ordersData);
-      setMenu(menuData);
-      setReservations(reservationsData);
-      setTables(tablesData.map(toRestaurantTableWithPosition));
-      setUsers(usersData);
-      setWaitlist(waitlistData);
+
+      const getValue = <T,>(result: PromiseSettledResult<T>, fallback: T): T =>
+        result.status === 'fulfilled' ? result.value : fallback;
+
+      setOrders(getValue(results[0], []));
+      setMenu(getValue(results[1], []));
+      setReservations(getValue(results[2], []));
+      setTables(getValue(results[3], []).map(toRestaurantTableWithPosition));
+      setUsers(getValue(results[4], []));
+      setWaitlist(getValue(results[5], []));
+
+      // Log any failures for debugging
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') {
+          const labels = ['orders', 'menu', 'reservations', 'tables', 'profiles', 'waitlist'];
+          console.warn(`Failed to fetch ${labels[i]}:`, r.reason);
+        }
+      });
     } catch (e) {
       console.error('Error refreshing data from Supabase:', e);
     }
@@ -1040,6 +1077,64 @@ export const AdminView: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="space-y-6"
         >
+          {/* Quick Assign Role Card */}
+          <div className="bg-card border border-border/20 rounded-2xl p-6 shadow-sm">
+            <h3 className="font-display font-bold text-lg text-foreground flex items-center gap-2 mb-4">
+              <ShieldAlert className="w-5 h-5 text-accent" />
+              Quick Assign Role
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Directly assign a role to any registered user by entering their email address.
+            </p>
+            <form onSubmit={handleAssignRoleByEmail} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+              <div className="flex-1 w-full">
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="user@example.com"
+                  value={assignEmail}
+                  onChange={(e) => { setAssignEmail(e.target.value); setAssignStatus(null); }}
+                  className="w-full bg-secondary text-foreground border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-muted-foreground/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Role</label>
+                <select
+                  value={assignRole}
+                  onChange={(e) => setAssignRole(e.target.value as 'customer' | 'staff' | 'admin')}
+                  className="bg-secondary text-foreground border border-border rounded-lg px-3 py-2 text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="customer">Customer</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={assignLoading}
+                className="px-5 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+              >
+                {assignLoading ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+                Assign Role
+              </button>
+            </form>
+            {assignStatus && (
+              <div className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium ${
+                assignStatus.type === 'success'
+                  ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                  : 'bg-red-500/10 text-red-400 border border-red-500/20'
+              }`}>
+                {assignStatus.message}
+              </div>
+            )}
+          </div>
+
+          {/* Users Table */}
           <div className="bg-card border border-border/20 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-display font-bold text-lg text-foreground flex items-center gap-2">

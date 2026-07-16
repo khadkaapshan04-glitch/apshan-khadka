@@ -224,6 +224,12 @@ create policy "Users can update own profile"
     and role = private.get_user_role()
   );
 
+create policy "Admins can update profiles"
+  on public.profiles for update
+  to authenticated
+  using (private.is_admin())
+  with check (private.is_admin());
+
 
 -- ─── Menu Items RLS ───
 alter table public.menu_items enable row level security;
