@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
 import {
-  User, UserPlus, ChefHat, LogOut, Shield, ArrowLeft
+  User, UserPlus, ChefHat, LogOut, Shield, ArrowLeft, Sparkles
 } from "lucide-react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 
@@ -12,12 +12,15 @@ import { AuthModal } from "./components/AuthModal";
 import { HomePage } from "./pages/HomePage";
 import { MenuPage } from "./pages/MenuPage";
 import { AboutPage } from "./pages/AboutPage";
+import { CulinaryLandingPage } from "./pages/CulinaryLandingPage";
 
 import { AdminPage } from "./pages/AdminPage";
 import { BookTablePage } from "./pages/BookTablePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { StaffAdminKitchenPage } from "./pages/StaffAdminKitchenPage";
 import { GoldenEmbersBackground } from "./components/GoldenEmbersBackground";
+import { Toaster } from "./components/ui/sonner";
+import { showLoginNotification } from "./components/ui/pop-toast";
 
 export default function App() {
   const navigate = useNavigate();
@@ -93,6 +96,11 @@ export default function App() {
   useEffect(() => {
     if (pendingLoginRedirect && !authLoading && profile) {
       setPendingLoginRedirect(false);
+      showLoginNotification({
+        name: profile.full_name,
+        role: profile.role,
+        email: profile.email,
+      });
       if (profile.role === 'admin') {
         navigate('/admin');
       } else if (profile.role === 'staff') {
@@ -244,8 +252,18 @@ export default function App() {
               </div>
             )}
 
-            {/* Auth */}
+            {/* Auth & 3D Experience */}
             <div className="flex items-center gap-2.5">
+              <motion.button
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/experience')}
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/40 text-amber-400 text-xs font-bold shadow-xs hover:bg-amber-500/20 transition-all cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>3D Experience</span>
+              </motion.button>
+
               {!currentUser ? (
                 <>
                   <motion.button
@@ -344,6 +362,7 @@ export default function App() {
               <nav className="p-6 space-y-2">
                 {[
                   { label: "Home", path: "/" },
+                  { label: "✨ 3D Cooking Experience", path: "/experience" },
                   { label: "Menu", path: "/menu" },
                   { label: "Reservations", path: "/book-table" },
                   { label: "About & Contact", path: "/about" },
@@ -407,6 +426,7 @@ export default function App() {
       <div className="relative z-10">
         <Routes>
           <Route path="/" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
+          <Route path="/experience" element={<CulinaryLandingPage />} />
           <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/about" element={<AboutPage />} />
@@ -464,6 +484,9 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* Popping Toast Notifications */}
+      <Toaster position="top-right" expand={true} />
 
     </div>
   );

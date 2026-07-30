@@ -169,16 +169,18 @@ function FloatingParticle({
 }
 
 // ── Main Component ───────────────────────────────────────
-export function Hero3DBackground({ mousePos }: { mousePos: { x: number; y: number } }) {
+export function Hero3DBackground({ mousePos = { x: 0, y: 0 } }: { mousePos?: { x: number; y: number } }) {
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
   const springX = useSpring(mx, { stiffness: 40, damping: 30 });
   const springY = useSpring(my, { stiffness: 40, damping: 30 });
 
   useEffect(() => {
-    mx.set(mousePos.x * 0.5);
-    my.set(mousePos.y * 0.5);
-  }, [mousePos.x, mousePos.y]);
+    const px = mousePos?.x ?? 0;
+    const py = mousePos?.y ?? 0;
+    mx.set(px * 0.5);
+    my.set(py * 0.5);
+  }, [mousePos?.x, mousePos?.y]);
 
   const layer1X = useTransform(springX, (v) => v * 0.3);
   const layer1Y = useTransform(springY, (v) => v * 0.3);

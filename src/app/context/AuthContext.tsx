@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { supabase } from '../lib/supabaseClient';
 import { db, getLoginProfileCache, clearLoginProfileCache } from '../lib/supabaseDb';
 import type { UserProfile } from '../lib/types';
+import { showLogoutNotification } from '../components/ui/pop-toast';
 
 interface AuthContextType {
   user: any | null;
@@ -98,9 +99,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
+    const currentName = profile?.full_name || user?.email?.split('@')[0] || 'Valued Guest';
     await db.logout();
     setUser(null);
     setProfile(null);
+    showLogoutNotification({ name: currentName });
   };
 
   return (
