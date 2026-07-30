@@ -385,7 +385,7 @@ export const CulinaryLandingPage: React.FC = () => {
   const handleEnter = useCallback(() => {
     if (isWarping) return;
     setIsWarping(true);
-    setTimeout(() => navigate('/'), 1100);
+    setTimeout(() => navigate('/home'), 1100);
   }, [isWarping, navigate]);
 
   return (

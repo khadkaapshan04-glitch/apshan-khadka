@@ -119,7 +119,7 @@ export default function App() {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate('/home');
   };
 
   const handleDemoLogin = async (email: string) => {
@@ -158,7 +158,7 @@ export default function App() {
             {/* Left side - Hamburger Menu + Logo */}
             <div className="flex items-center gap-4">
               {/* Hamburger Menu Button (only for Storefront views) */}
-              {(location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard' || location.pathname === '/about') && (
+              {(location.pathname === '/home' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard' || location.pathname === '/about') && (
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -174,9 +174,9 @@ export default function App() {
               )}
 
               {/* Back to storefront button when in other portals */}
-              {(location.pathname !== '/' && location.pathname !== '/menu' && location.pathname !== '/book-table' && location.pathname !== '/dashboard' && location.pathname !== '/about') && (
+              {(location.pathname !== '/home' && location.pathname !== '/' && location.pathname !== '/menu' && location.pathname !== '/book-table' && location.pathname !== '/dashboard' && location.pathname !== '/about') && (
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/home')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 text-xs font-semibold text-foreground/80 hover:text-foreground hover:border-accent/40 hover:bg-accent/5 transition-all cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Return to Store
@@ -186,7 +186,7 @@ export default function App() {
               {/* Logo */}
               <motion.div 
                 whileHover={{ scale: 1.02 }} 
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/home')}
                 className="flex items-center gap-2.5 cursor-pointer select-none"
               >
                 <svg width="26" height="30" viewBox="0 0 26 30" fill="none">
@@ -212,9 +212,9 @@ export default function App() {
             {currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff') && (
               <div className="hidden md:flex bg-secondary p-1 rounded-xl">
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/home')}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    (location.pathname === '/' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard' || location.pathname === '/about') ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                    (location.pathname === '/home' || location.pathname === '/menu' || location.pathname === '/book-table' || location.pathname === '/dashboard' || location.pathname === '/about') ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
                   }`}
                 >
                   HOME
@@ -361,8 +361,7 @@ export default function App() {
               {/* Navigation Links */}
               <nav className="p-6 space-y-2">
                 {[
-                  { label: "Home", path: "/" },
-                  { label: "✨ 3D Cooking Experience", path: "/experience" },
+                  { label: "Home", path: "/home" },
                   { label: "Menu", path: "/menu" },
                   { label: "Reservations", path: "/book-table" },
                   { label: "About & Contact", path: "/about" },
@@ -425,12 +424,13 @@ export default function App() {
       {/* ── Main View Manager ── */}
       <div className="relative z-10">
         <Routes>
-          <Route path="/" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
-          <Route path="/experience" element={<CulinaryLandingPage />} />
+          <Route path="/" element={<CulinaryLandingPage />} />
+          <Route path="/home" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/reset-password" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
+          <Route path="/experience" element={<CulinaryLandingPage />} />
           <Route 
             path="/dashboard" 
             element={
@@ -439,7 +439,7 @@ export default function App() {
               ) : currentUser ? (
                 <DashboardPage currentUser={currentUser} />
               ) : (
-                <Navigate to="/" replace />
+                <Navigate to="/home" replace />
               )
             } 
           />
@@ -468,7 +468,7 @@ export default function App() {
               )
             }
           />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
 
