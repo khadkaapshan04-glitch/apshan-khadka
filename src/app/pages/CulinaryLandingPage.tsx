@@ -263,7 +263,7 @@ const HeroDish: React.FC<{ tiltX: number; tiltY: number }> = ({ tiltX, tiltY }) 
               transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
             >
               <img
-                src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=900"
+                src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=900"
                 alt="Gourmet cuisine"
                 className="w-full h-full object-cover scale-[1.15]"
                 loading="eager"
@@ -445,7 +445,7 @@ export const CulinaryLandingPage: React.FC = () => {
           <span className="text-3xl">🧂</span>
         </FloatingItem>
         <FloatingItem x="12%" y="42%" z={110} duration={8} delay={3} orbitRadius={8}>
-          <span className="text-3xl">🥩</span>
+          <span className="text-3xl">🥦</span>
         </FloatingItem>
         <FloatingItem x="88%" y="35%" z={75} duration={7} delay={2.2}>
           <span className="text-3xl">🍷</span>

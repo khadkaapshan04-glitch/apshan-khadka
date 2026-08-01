@@ -22,7 +22,7 @@ import { GoldenEmbersBackground } from '../components/GoldenEmbersBackground';
 interface DishItem {
   id: string;
   name: string;
-  category: 'signatures' | 'wagyu' | 'seafood' | 'desserts' | 'cocktails';
+  category: 'signatures' | 'vegetarian' | 'seafood' | 'desserts' | 'cocktails';
   price: string;
   rating: number;
   image: string;
@@ -37,17 +37,17 @@ interface DishItem {
 const GALLERY_DISHES: DishItem[] = [
   {
     id: '1',
-    name: 'A5 Miyazaki Wagyu Steak',
-    category: 'wagyu',
-    price: '$120',
+    name: 'Truffle Mushroom Risotto',
+    category: 'signatures',
+    price: '$52',
     rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800',
-    tagline: 'Seared on Binchotan Charcoal with Truffle Glaze',
-    description: 'Savor the world’s finest A5 Miyazaki Wagyu, lightly seared on Japanese white oak charcoal and finished with black winter truffle reduction and smoked Maldon salt crystals.',
-    ingredients: ['A5 Miyazaki Wagyu', 'Black Winter Truffle', 'Binchotan Charcoal', 'Maldon Salt', 'Fuji Apple Glaze'],
-    pairing: 'Cabernet Sauvignon 2018',
-    prepTime: '20 mins',
-    calories: '650 kcal',
+    image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?auto=format&fit=crop&q=80&w=800',
+    tagline: 'Arborio Rice with Wild Porcini & Black Truffle Shavings',
+    description: 'Slow-stirred Carnaroli rice enriched with wild porcini mushroom stock, finished with aged Parmigiano-Reggiano, hand-shaved black Périgord truffle, and a drizzle of cold-pressed truffle oil.',
+    ingredients: ['Carnaroli Arborio Rice', 'Wild Porcini Mushrooms', 'Black Périgord Truffle', 'Parmigiano-Reggiano 36mo', 'Cold-Pressed Truffle Oil'],
+    pairing: 'Barolo DOCG 2017',
+    prepTime: '28 mins',
+    calories: '580 kcal',
   },
   {
     id: '2',
@@ -93,17 +93,17 @@ const GALLERY_DISHES: DishItem[] = [
   },
   {
     id: '5',
-    name: 'Classic Gourmet Beef Burger',
+    name: 'Roasted Heirloom Vegetable Plate',
     category: 'signatures',
-    price: '$34',
+    price: '$38',
     rating: 4.8,
-    image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&q=80&w=800',
-    tagline: 'Prime Dry-Aged Beef with Caramelized Shallots & Brioche',
-    description: 'Dry-aged prime beef patty melted with Gruyère cheese, caramelized balsamic shallots, and smoked bacon jam on a toasted brioche bun.',
-    ingredients: ['Dry-Aged Beef', 'Gruyère Cheese', 'Balsamic Shallots', 'Smoked Bacon Jam', 'Artisanal Brioche'],
-    pairing: 'Bordeaux Blend 2019',
-    prepTime: '15 mins',
-    calories: '720 kcal',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=800',
+    tagline: 'Seasonal Garden Harvest with Burrata & Balsamic Glaze',
+    description: 'A stunning artist\'s palette of oven-roasted heirloom vegetables — tri-color carrots, golden beets, rainbow chard, and charred broccolini — served with velvety burrata and aged balsamic reduction.',
+    ingredients: ['Heirloom Carrots', 'Golden Beets', 'Fresh Burrata', 'Rainbow Chard', 'Aged Balsamic Glaze'],
+    pairing: 'Biodynamic Pinot Grigio 2022',
+    prepTime: '22 mins',
+    calories: '360 kcal',
   },
   {
     id: '6',
@@ -332,7 +332,7 @@ export const Gallery3DPage: React.FC = () => {
         <div className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-full bg-zinc-900/80 border border-amber-500/30 backdrop-blur-md shadow-xl">
           {[
             { id: 'all', label: 'All Creations' },
-            { id: 'wagyu', label: 'Prime Wagyu' },
+            { id: 'vegetarian', label: 'Garden Creations' },
             { id: 'seafood', label: 'Seafood' },
             { id: 'signatures', label: 'Signatures' },
             { id: 'desserts', label: 'Desserts' },
