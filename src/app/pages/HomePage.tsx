@@ -22,6 +22,7 @@ import { OrbitalRing3D } from '../components/OrbitalRing3D';
 import { Tilt3DCard } from '../components/Tilt3DCard';
 import { AnimatedWaveDivider } from '../components/AnimatedWaveDivider';
 import { WindAndGrass } from '../components/WindAndGrass';
+import { HomeParticleLayer } from '../components/HomeParticleLayer';
 
 import type { UserProfile } from '../lib/types';
 
@@ -102,6 +103,8 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
 
   return (
     <div className="pt-[72px] min-h-screen overflow-x-hidden" onMouseMove={handleMouseMove}>
+      {/* ── Particle & Space Transition Layer ── */}
+      <HomeParticleLayer />
       <section className="relative min-h-screen flex items-center">
         {/* ── 3D Animated Background ── */}
         <Hero3DBackground mousePos={mousePos} />
