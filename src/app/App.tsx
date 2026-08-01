@@ -14,6 +14,7 @@ import { MenuPage } from "./pages/MenuPage";
 import { AboutPage } from "./pages/AboutPage";
 import { CulinaryLandingPage } from "./pages/CulinaryLandingPage";
 import { Gallery3DPage } from "./pages/Gallery3DPage";
+import { NightAtFlavore } from "./pages/NightAtFlavore";
 
 import { AdminPage } from "./pages/AdminPage";
 import { BookTablePage } from "./pages/BookTablePage";
@@ -426,13 +427,14 @@ export default function App() {
       {/* ── Main View Manager ── */}
       <div className="relative z-10">
         <Routes>
-          <Route path="/" element={<CulinaryLandingPage />} />
+          <Route path="/" element={Math.random() > 0.5 ? <CulinaryLandingPage /> : <NightAtFlavore />} />
           <Route path="/home" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/menu" element={<MenuPage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/book-table" element={<BookTablePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/reset-password" element={<HomePage currentUser={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />} />
           <Route path="/experience" element={<CulinaryLandingPage />} />
+          <Route path="/night" element={<NightAtFlavore />} />
           <Route path="/gallery" element={<Gallery3DPage />} />
           <Route 
             path="/dashboard" 
