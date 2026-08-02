@@ -13,7 +13,6 @@ import { HomePage } from "./pages/HomePage";
 import { MenuPage } from "./pages/MenuPage";
 import { AboutPage } from "./pages/AboutPage";
 import { CulinaryLandingPage } from "./pages/CulinaryLandingPage";
-import { Gallery3DPage } from "./pages/Gallery3DPage";
 import { NightAtFlavore } from "./pages/NightAtFlavore";
 import { TheRitual } from "./pages/TheRitual";
 import { ForSomeoneSpecial } from "./pages/ForSomeoneSpecial";
@@ -259,17 +258,8 @@ export default function App() {
               </div>
             )}
 
-            {/* Auth & 3D Links */}
+            {/* Auth Links */}
             <div className="flex items-center gap-2.5">
-              <motion.button
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/gallery')}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/40 text-amber-400 text-xs font-bold shadow-xs hover:bg-amber-500/20 transition-all cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span>3D Gallery</span>
-              </motion.button>
 
               {!currentUser ? (
                 <>
@@ -369,7 +359,7 @@ export default function App() {
               <nav className="p-6 space-y-2">
                 {[
                   { label: "Home", path: "/home" },
-                  { label: "✨ 3D Luxury Gallery", path: "/gallery" },
+                  { label: "✨ 3D Luxury Gallery", scrollTo: "gallery-3d" },
                   { label: "Menu", path: "/menu" },
                   { label: "Reservations", path: "/book-table" },
                   { label: "About & Contact", path: "/about" },
@@ -385,7 +375,16 @@ export default function App() {
                     key={item.label}
                     onClick={() => {
                       setIsSidebarOpen(false);
-                      if (item.path) {
+                      if (item.scrollTo) {
+                        if (location.pathname !== '/home') {
+                          navigate('/home');
+                          setTimeout(() => {
+                            document.getElementById(item.scrollTo!)?.scrollIntoView({ behavior: 'smooth' });
+                          }, 200);
+                        } else {
+                          document.getElementById(item.scrollTo)?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      } else if (item.path) {
                         navigate(item.path);
                       }
                     }}
@@ -442,7 +441,6 @@ export default function App() {
           <Route path="/night" element={<NightAtFlavore />} />
           <Route path="/ritual" element={<TheRitual />} />
           <Route path="/special" element={<ForSomeoneSpecial />} />
-          <Route path="/gallery" element={<Gallery3DPage />} />
           <Route 
             path="/dashboard" 
             element={

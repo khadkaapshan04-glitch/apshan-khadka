@@ -11,6 +11,10 @@ import {
   Trophy,
   Star,
   Heart,
+  Sparkles,
+  UtensilsCrossed,
+  Flame,
+  Leaf,
 } from 'lucide-react';
 
 import uploadedFoodImg from '../../imports/Minimalistic_simple_food_design_202605251743-1.jpeg';
@@ -22,7 +26,10 @@ import { OrbitalRing3D } from '../components/OrbitalRing3D';
 import { Tilt3DCard } from '../components/Tilt3DCard';
 import { AnimatedWaveDivider } from '../components/AnimatedWaveDivider';
 import { WindAndGrass } from '../components/WindAndGrass';
-import { HomeParticleLayer } from '../components/HomeParticleLayer';
+import { InfiniteMarquee } from '../components/ui/InfiniteMarquee';
+import { SpotlightBento } from '../components/ui/SpotlightBento';
+import { GoldenSpacePortal } from '../components/GoldenSpacePortal';
+import { Gallery3DSection } from '../components/Gallery3DSection';
 
 import type { UserProfile } from '../lib/types';
 
@@ -91,6 +98,15 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
   }, []);
 
   const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+  const [isWarping, setIsWarping] = React.useState(false);
+
+  const handleEnterGallery = () => {
+    setIsWarping(true);
+    setTimeout(() => {
+      navigate('/gallery');
+      setTimeout(() => setIsWarping(false), 500);
+    }, 1500);
+  };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const { clientX, clientY } = e;
@@ -103,8 +119,6 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
 
   return (
     <div className="pt-[72px] min-h-screen overflow-x-hidden" onMouseMove={handleMouseMove}>
-      {/* ── Particle & Space Transition Layer ── */}
-      <HomeParticleLayer />
       <section className="relative min-h-screen flex items-center">
         {/* ── 3D Animated Background ── */}
         <Hero3DBackground mousePos={mousePos} />
@@ -143,40 +157,6 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
           animate={{ scaleX: [0.7, 1, 0.7], opacity: [0.15, 0.5, 0.15] }}
           transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
         />
-
-        {/* ── Floating 3D dots (depth particles) ── */}
-        {[
-          { top: '12%', left: '5%', size: 4, dur: 7, del: 0 },
-          { top: '28%', left: '88%', size: 3, dur: 9, del: 1.5 },
-          { top: '72%', left: '92%', size: 5, dur: 6, del: 3 },
-          { top: '85%', left: '15%', size: 3, dur: 8, del: 2 },
-          { top: '55%', left: '3%', size: 4, dur: 10, del: 4 },
-        ].map((dot, i) => (
-          <motion.div
-            key={`dot-${i}`}
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              top: dot.top,
-              left: dot.left,
-              width: dot.size,
-              height: dot.size,
-              backgroundColor: 'rgba(212, 165, 116, 0.35)',
-              boxShadow: '0 0 8px rgba(212, 165, 116, 0.2)',
-            }}
-            animate={{
-              y: [0, -20, 0, 15, 0],
-              x: [0, 8, 0, -8, 0],
-              scale: [1, 1.3, 1, 0.8, 1],
-              opacity: [0.3, 0.7, 0.3, 0.5, 0.3],
-            }}
-            transition={{
-              duration: dot.dur,
-              delay: dot.del,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-        ))}
 
         <div className="max-w-7xl mx-auto px-6 lg:px-10 w-full">
           <div className="grid lg:grid-cols-2 items-center gap-6 md:gap-8 py-8 md:py-14 lg:py-20">
@@ -406,57 +386,74 @@ export function HomePage({ currentUser, onOpenAuth }: HomePageProps) {
 
       {/* ── Animated Wave Divider ── */}
       <AnimatedWaveDivider />
-
-      {/* ── Stats Section with 3D effects ── */}
-      <section className="border-t border-border/35 py-14 bg-card/20 relative overflow-hidden">
-        {/* Background animated gradient for stats section */}
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(212,165,116,0.04) 0%, transparent 70%)',
-          }}
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.5, 0.8, 0.5],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      <section className="py-12 border-t border-b border-border/30 bg-card/10 overflow-hidden">
+        <InfiniteMarquee
+          items={[
+            "✦ Artisan Ingredients",
+            "✦ Michelin-star Chefs",
+            "✦ Fast & Fresh Delivery",
+            "✦ Exquisite Dining Experience",
+            "✦ Organic & Local",
+            "✦ 24/7 Support"
+          ]}
+          speed={25}
+          itemClassName="text-lg md:text-2xl font-display font-semibold text-foreground/80"
         />
+      </section>
 
+      {/* ── Embedded 3D Gallery Section ── */}
+      <Gallery3DSection />
+
+      {/* ── "The Flavoré Experience" / Crafted for the Senses (End Section) ── */}
+      <section id="experience" className="py-20 md:py-32 relative bg-background border-t border-border/20">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={stagger}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-8"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-center mb-16"
           >
-            {stats.map((s, i) => (
-              <Tilt3DCard key={s.label} tiltIntensity={10} glareEnabled={true}>
-                <motion.div variants={fadeUp} whileHover={{ y: -6 }} className="text-center group cursor-pointer p-4">
-                  <motion.div
-                    className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent/10 mb-3 group-hover:bg-accent/20 transition-colors duration-300"
-                    whileHover={{
-                      rotateY: [0, 360],
-                      scale: [1, 1.1, 1],
-                    }}
-                    transition={{ duration: 0.6 }}
-                    style={{ transformStyle: 'preserve-3d' }}
-                  >
-                    <s.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
-                  </motion.div>
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    whileInView={{ scale: 1, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.08 + 0.3, type: 'spring', stiffness: 180 }}
-                  >
-                    <div className="font-display text-3xl lg:text-4xl font-bold text-foreground mb-1">{s.value}</div>
-                    <div className="text-xs text-muted-foreground font-medium">{s.label}</div>
-                  </motion.div>
-                </motion.div>
-              </Tilt3DCard>
-            ))}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent mb-6">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">The Flavoré Experience</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-4">Crafted for the senses</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Every dish is a masterpiece designed to delight your palate. Experience dining elevated by passion, precision, and the finest ingredients.
+            </p>
           </motion.div>
+
+          <SpotlightBento
+            items={[
+              {
+                title: 'Signature Wood-Fired',
+                description: 'Our pizzas and roasted specialties are cooked to perfection in an authentic imported wood-fired oven.',
+                icon: <Flame className="w-6 h-6" />,
+                colSpan: 2,
+                bgImage: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaXp6YSUyMG92ZW58ZW58MXx8fHwxNzc5NzEwNTYxfDA&ixlib=rb-4.1.0&q=80&w=1080',
+              },
+              {
+                title: 'Farm to Table',
+                description: 'We source 100% of our organic produce directly from local farms every morning.',
+                icon: <Leaf className="w-6 h-6" />,
+                colSpan: 1,
+              },
+              {
+                title: 'Gourmet Selection',
+                description: 'Explore a curated menu of contemporary classics and daring new flavor combinations.',
+                icon: <UtensilsCrossed className="w-6 h-6" />,
+                colSpan: 1,
+              },
+              {
+                title: 'Award-Winning Chefs',
+                description: 'Our kitchen is helmed by culinary artists with decades of experience at Michelin-starred venues globally.',
+                icon: <Award className="w-6 h-6" />,
+                colSpan: 2,
+                bgImage: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVmfGVufDF8fHx8MTc3OTcxMDU2MXww&ixlib=rb-4.1.0&q=80&w=1080',
+              },
+            ]}
+          />
         </div>
       </section>
 

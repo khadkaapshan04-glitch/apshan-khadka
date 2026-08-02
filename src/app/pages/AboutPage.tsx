@@ -119,7 +119,7 @@ export function AboutPage() {
           className="grid lg:grid-cols-12 gap-12 items-center"
         >
           {/* Story Narrative */}
-          <motion.div variants={itemVariants} className="lg:col-span-7 space-y-6">
+          <motion.div variants={itemVariants} className="lg:col-span-12 space-y-6">
             <div className="flex items-center gap-2 text-accent">
               <Sparkles className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase tracking-widest">Since 2018</span>
@@ -148,19 +148,6 @@ export function AboutPage() {
                 — Chef de Cuisine
               </cite>
             </blockquote>
-          </motion.div>
-
-          {/* Story Image Panel */}
-          <motion.div variants={itemVariants} className="lg:col-span-5 relative group">
-            <div className="absolute inset-0 border border-accent/20 rounded-2xl translate-x-4 translate-y-4 group-hover:translate-x-2 group-hover:translate-y-2 transition-all duration-300 pointer-events-none" />
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border/40 aspect-4/3">
-              <img 
-                src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=800" 
-                alt="Flavoré Dining Room Ambiance"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
-            </div>
           </motion.div>
         </motion.div>
       </section>
@@ -215,17 +202,17 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ── CONTACT & LOCATION SECTION ── */}
+      {/* ── CONTACT & INSPIRATION SECTION ── */}
       <section className="py-16 md:py-24 max-w-7xl mx-auto px-6 lg:px-10">
         <div className="grid lg:grid-cols-12 gap-12 items-start">
           
-          {/* Left Side: Info & Map Mockup */}
+          {/* Left Side: Info */}
           <div className="lg:col-span-5 space-y-8">
             <div>
               <span className="text-accent text-[10px] font-bold uppercase tracking-[0.25em] mb-2 block">Reach Us</span>
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Contact & Location</h2>
-              <p className="text-xs text-muted-foreground mt-2">
-                Have questions or need special banquet accommodations? We are always here to assist you.
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Contact & Inspiration</h2>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                Inspired by the serene lakes and majestic mountains of Pokhara, Nepal, we bring warmth and hospitality to every dish. Have questions? We are always here to assist you.
               </p>
             </div>
 
@@ -233,108 +220,13 @@ export function AboutPage() {
             <div className="space-y-4">
               <div className="flex items-start gap-4 p-4 rounded-xl bg-card/30 border border-border/40 hover:border-accent/20 transition-all">
                 <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-accent" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Our Location</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    128 Gourmet Avenue, Culinary District<br />New York, NY 10001
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/30 border border-border/40 hover:border-accent/20 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                  <Phone className="w-4 h-4 text-accent" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Reservations & Inquiries</h4>
-                  <p className="text-xs text-muted-foreground hover:text-accent transition-colors font-medium">
-                    <a href="tel:+15558392910">+1 (555) 839-2910</a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/30 border border-border/40 hover:border-accent/20 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
                   <Mail className="w-4 h-4 text-accent" />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Email Correspondence</h4>
                   <p className="text-xs text-muted-foreground hover:text-accent transition-colors font-medium">
-                    <a href="mailto:info@flavore.com">info@flavore.com</a>
+                    <a href="mailto:khadkaapshan04@gmail.com">khadkaapshan04@gmail.com</a>
                   </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-card/30 border border-border/40 hover:border-accent/20 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4 text-accent" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1">Opening Hours</h4>
-                  <div className="text-[11px] text-muted-foreground space-y-1 mt-0.5">
-                    <div className="flex justify-between gap-6">
-                      <span>Lunch Service:</span>
-                      <span className="font-semibold">11:30 AM – 3:00 PM</span>
-                    </div>
-                    <div className="flex justify-between gap-6">
-                      <span>Dinner Service:</span>
-                      <span className="font-semibold text-accent">5:30 PM – 11:00 PM</span>
-                    </div>
-                    <div className="text-[9px] text-muted-foreground/60 italic mt-0.5">Kitchen orders close 45 minutes prior.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Premium CSS-Mockup Map Component */}
-            <div className="relative rounded-2xl overflow-hidden border border-border/40 shadow-xl bg-secondary/35 p-4 aspect-[16/10] flex flex-col justify-between">
-              {/* Map gridlines mock */}
-              <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 opacity-5 pointer-events-none">
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <div key={i} className="border-r border-b border-foreground" />
-                ))}
-              </div>
-              
-              {/* Abstract Roads Mockup */}
-              <div className="absolute inset-0 pointer-events-none opacity-10">
-                <div className="absolute top-1/2 left-0 right-0 h-4 bg-foreground/40 rotate-6" />
-                <div className="absolute top-0 bottom-0 left-1/3 w-4 bg-foreground/40 -rotate-12" />
-                <div className="absolute top-1/4 bottom-0 right-1/4 w-3 bg-foreground/40 rotate-45" />
-              </div>
-
-              {/* Glowing Location Pins */}
-              <div className="absolute top-1/2 left-[38%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                <span className="relative flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-accent shadow-lg shadow-accent/50 border border-white/20"></span>
-                </span>
-                <div className="mt-1 bg-background/90 backdrop-blur-xs border border-accent/35 rounded-md px-2 py-0.5 shadow-md">
-                  <span className="text-[8px] font-bold text-accent uppercase tracking-wider">Flavoré</span>
-                </div>
-              </div>
-
-              {/* Map UI overlays */}
-              <div className="z-10 bg-background/80 backdrop-blur-md border border-border/30 rounded-lg p-2.5 max-w-[200px] shadow-sm self-start">
-                <span className="text-[9px] font-bold text-foreground block">Flavoré Bistro & Grill</span>
-                <span className="text-[8px] text-muted-foreground block mt-0.5 leading-tight">128 Gourmet Ave, Culinary District</span>
-              </div>
-
-              <div className="z-10 flex justify-between items-center w-full">
-                <span className="text-[9px] font-semibold text-muted-foreground bg-background/60 backdrop-blur-xs px-2 py-1 rounded-md border border-border/30">
-                  © OpenMap Mock
-                </span>
-                <div className="flex gap-1.5">
-                  <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-6 h-6 rounded-md bg-background/80 hover:bg-accent/15 border border-border/40 hover:border-accent/40 flex items-center justify-center transition-all">
-                    <Instagram className="w-3.5 h-3.5 text-muted-foreground hover:text-accent" />
-                  </a>
-                  <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-6 h-6 rounded-md bg-background/80 hover:bg-accent/15 border border-border/40 hover:border-accent/40 flex items-center justify-center transition-all">
-                    <Facebook className="w-3.5 h-3.5 text-muted-foreground hover:text-accent" />
-                  </a>
-                  <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-6 h-6 rounded-md bg-background/80 hover:bg-accent/15 border border-border/40 hover:border-accent/40 flex items-center justify-center transition-all">
-                    <Twitter className="w-3.5 h-3.5 text-muted-foreground hover:text-accent" />
-                  </a>
                 </div>
               </div>
             </div>

@@ -44,7 +44,7 @@ const getAuthErrorMessage = (error: unknown, fallback: string): string => {
 };
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
-const SUPABASE_READ_TIMEOUT_MS = 2500;
+const SUPABASE_READ_TIMEOUT_MS = 8000;
 
 const withReadTimeout = async <T,>(request: PromiseLike<T>, label: string): Promise<T> => {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -416,6 +416,7 @@ export const db = {
           id: it.menu_item_id ?? it.menuItem?.id ?? '',
           name: it.name ?? it.menuItem?.name ?? '',
           price: Number(it.price ?? it.menuItem?.price ?? 0),
+          category: it.category ?? it.menuItem?.category ?? 'Mains',
           description: it.description ?? it.menuItem?.description ?? '',
           image_url: it.image_url ?? it.menuItem?.image_url ?? '',
           is_available: true
@@ -539,6 +540,7 @@ export const db = {
         id: it.menu_item_id ?? it.menuItem?.id ?? '',
         name: it.name ?? it.menuItem?.name ?? '',
         price: Number(it.price ?? it.menuItem?.price ?? 0),
+        category: it.category ?? it.menuItem?.category ?? 'Mains',
         description: it.description ?? it.menuItem?.description ?? '',
         image_url: it.image_url ?? it.menuItem?.image_url ?? '',
         is_available: true
@@ -594,6 +596,7 @@ export const db = {
         id: it.menu_item_id ?? it.menuItem?.id ?? '',
         name: it.name ?? it.menuItem?.name ?? '',
         price: Number(it.price ?? it.menuItem?.price ?? 0),
+        category: it.category ?? it.menuItem?.category ?? 'Mains',
         description: it.description ?? it.menuItem?.description ?? '',
         image_url: it.image_url ?? it.menuItem?.image_url ?? '',
         is_available: true

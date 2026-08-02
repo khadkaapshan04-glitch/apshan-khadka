@@ -89,7 +89,7 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-card/95 backdrop-blur-lg border border-border/30 rounded-xl shadow-xl p-3 min-w-[140px]">
       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-base font-display font-bold text-foreground">${payload[0].value.toFixed(2)}</p>
+      <p className="text-base font-display font-bold text-foreground">Rs. {payload[0].value.toFixed(2)}</p>
     </div>
   );
 }
@@ -152,7 +152,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
         try {
           const allOrders = await db.getOrders();
           setUserOrders(allOrders.filter(o =>
-            o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
+            (o.customer_email ?? o.customerEmail ?? '').toLowerCase() === currentUser.email.toLowerCase()
           ));
           const allRes = await db.getReservations();
           setUserReservations(allRes.filter(r =>
@@ -176,7 +176,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
       try {
         const allOrders = await db.getOrders();
         setUserOrders(allOrders.filter(o =>
-          o.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
+          (o.customer_email ?? o.customerEmail ?? '').toLowerCase() === currentUser.email.toLowerCase()
         ));
         const allRes = await db.getReservations();
         setUserReservations(allRes.filter(r =>
@@ -201,10 +201,11 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
     // Favorite item calculation
     const itemCounts: Record<string, { name: string; count: number }> = {};
     userOrders.forEach(o => {
-      o.items.forEach(item => {
-        const key = item.menuItem.id;
-        if (!itemCounts[key]) itemCounts[key] = { name: item.menuItem.name, count: 0 };
-        itemCounts[key].count += item.quantity;
+      (o.items || []).forEach((item: any) => {
+        const key = item.menuItem?.id ?? item.menu_item_id ?? item.name;
+        const name = item.menuItem?.name ?? item.name ?? 'Item';
+        if (!itemCounts[key]) itemCounts[key] = { name, count: 0 };
+        itemCounts[key].count += (item.quantity || 1);
       });
     });
     const favoriteItem = Object.values(itemCounts).sort((a, b) => b.count - a.count)[0];
@@ -223,9 +224,10 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
     // Spending by category for pie chart
     const categorySpending: Record<string, number> = {};
     userOrders.forEach(o => {
-      o.items.forEach(item => {
-        const cat = item.menuItem.category;
-        categorySpending[cat] = (categorySpending[cat] || 0) + (item.menuItem.price * item.quantity);
+      (o.items || []).forEach((item: any) => {
+        const cat = item.menuItem?.category ?? item.category ?? 'Mains';
+        const price = Number(item.menuItem?.price ?? item.price ?? 0);
+        categorySpending[cat] = (categorySpending[cat] || 0) + (price * (item.quantity || 1));
       });
     });
     const categoryData = Object.entries(categorySpending).map(([name, value]) => ({ name, value }));
@@ -298,7 +300,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                 Welcome back
               </span>
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-                {currentUser.fullName.split(' ')[0]}'s Dashboard
+                {(currentUser.full_name ?? (currentUser as any).fullName ?? currentUser.email).split(' ')[0]}'s Dashboard
               </h1>
               <p className="text-xs text-muted-foreground mt-1.5">
                 Your personal dining analytics and activity at Flavoré
@@ -327,8 +329,8 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
           <StatCard
             icon={DollarSign}
             label="Total Spent"
-            value={`$${analytics.totalSpent.toFixed(2)}`}
-            subtitle={analytics.totalOrders > 0 ? `Avg $${analytics.avgOrderValue.toFixed(2)} per order` : undefined}
+            value={`Rs. ${analytics.totalSpent.toFixed(2)}`}
+            subtitle={analytics.totalOrders > 0 ? `Avg Rs. ${analytics.avgOrderValue.toFixed(2)} per order` : undefined}
             color="#d4a574"
             delay={0.1}
           />
@@ -406,7 +408,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                     </div>
                     <div className="flex items-center gap-1 text-[10px] font-bold text-accent bg-accent/8 px-2.5 py-1 rounded-full">
                       <TrendingUp className="w-3 h-3" />
-                      <span>${analytics.totalSpent.toFixed(2)} total</span>
+                      <span>Rs. {analytics.totalSpent.toFixed(2)} total</span>
                     </div>
                   </div>
 
@@ -431,7 +433,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                             tick={{ fontSize: 10, fill: '#6b6662' }}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(v: number) => `$${v}`}
+                            tickFormatter={(v: number) => `Rs. ${v}`}
                           />
                           <Tooltip content={<CustomTooltip />} />
                           <Area
@@ -478,7 +480,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                               ))}
                             </Pie>
                             <Tooltip
-                              formatter={(value: number) => [`$${value.toFixed(2)}`, 'Spent']}
+                              formatter={(value: number) => [`Rs. ${value.toFixed(2)}`, 'Spent']}
                               contentStyle={{
                                 background: 'var(--card)',
                                 border: '1px solid var(--border)',
@@ -500,7 +502,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                               />
                               <span className="text-[11px] font-semibold text-foreground/80">{cat.name}</span>
                             </div>
-                            <span className="text-[11px] font-bold text-foreground">${cat.value.toFixed(2)}</span>
+                            <span className="text-[11px] font-bold text-foreground">Rs. {cat.value.toFixed(2)}</span>
                           </div>
                         ))}
                       </div>
@@ -540,12 +542,12 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                                   : 'Takeaway'}
                               </span>
                             </div>
-                            <div className="text-xs text-foreground">
+                             <div className="text-xs text-foreground">
                               <span className="font-bold">Items: </span>
-                              {order.items.map(item => `${item.menuItem.name} ×${item.quantity}`).join(', ')}
+                              {(order.items || []).map((item: any) => `${item.menuItem?.name ?? item.name} ×${item.quantity}`).join(', ')}
                             </div>
                             <div className="text-[10px] text-muted-foreground">
-                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Total: ${order.total.toFixed(2)}
+                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Total: Rs. {order.total.toFixed(2)}
                             </div>
                           </div>
                           <div className="w-full md:w-56">
@@ -590,7 +592,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                             </td>
                             <td className="py-3 pr-4">
                               <span className="text-[11px] text-foreground/80 line-clamp-1">
-                                {order.items.map(item => `${item.menuItem.name} ×${item.quantity}`).join(', ')}
+                                {(order.items || []).map((item: any) => `${item.menuItem?.name ?? item.name} ×${item.quantity}`).join(', ')}
                               </span>
                             </td>
                             <td className="py-3 pr-4">
@@ -608,7 +610,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                               </span>
                             </td>
                             <td className="py-3 pr-4 text-right">
-                              <span className="text-[11px] font-bold text-foreground">${order.total.toFixed(2)}</span>
+                              <span className="text-[11px] font-bold text-foreground">Rs. {order.total.toFixed(2)}</span>
                             </td>
                             <td className="py-3 text-right">
                               <StatusBadge status={order.status} />
@@ -696,7 +698,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-base font-display font-bold text-foreground">${order.total.toFixed(2)}</span>
+                        <span className="text-base font-display font-bold text-foreground">Rs. {order.total.toFixed(2)}</span>
                         {expandedOrder === order.id
                           ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
                           : <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -732,32 +734,39 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                                 </tr>
                               </thead>
                               <tbody>
-                                {order.items.map((item, j) => (
-                                  <tr key={j} className="border-b border-border/8 last:border-0">
-                                    <td className="py-2.5">
-                                      <div className="flex items-center gap-2.5">
-                                        <img
-                                          src={item.menuItem.image_url}
-                                          alt={item.menuItem.name}
-                                          className="w-8 h-8 rounded-lg object-cover border border-border/20"
-                                        />
-                                        <div>
-                                          <span className="text-[11px] font-semibold text-foreground block">{item.menuItem.name}</span>
-                                          <span className="text-[9px] text-muted-foreground">{item.menuItem.category}</span>
+                                {(order.items || []).map((item: any, j: number) => {
+                                  const name = item.menuItem?.name ?? item.name ?? 'Item';
+                                  const category = item.menuItem?.category ?? item.category ?? 'Mains';
+                                  const imgUrl = item.menuItem?.image_url ?? item.image_url ?? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600';
+                                  const price = Number(item.menuItem?.price ?? item.price ?? 0);
+                                  const qty = item.quantity || 1;
+                                  return (
+                                    <tr key={j} className="border-b border-border/8 last:border-0">
+                                      <td className="py-2.5">
+                                        <div className="flex items-center gap-2.5">
+                                          <img
+                                            src={imgUrl}
+                                            alt={name}
+                                            className="w-8 h-8 rounded-lg object-cover border border-border/20"
+                                          />
+                                          <div>
+                                            <span className="text-[11px] font-semibold text-foreground block">{name}</span>
+                                            <span className="text-[9px] text-muted-foreground">{category}</span>
+                                          </div>
                                         </div>
-                                      </div>
-                                    </td>
-                                    <td className="py-2.5 text-center">
-                                      <span className="text-[11px] font-bold text-foreground/70 bg-secondary px-2 py-0.5 rounded-md">×{item.quantity}</span>
-                                    </td>
-                                    <td className="py-2.5 text-right">
-                                      <span className="text-[11px] text-muted-foreground">${item.menuItem.price.toFixed(2)}</span>
-                                    </td>
-                                    <td className="py-2.5 text-right">
-                                      <span className="text-[11px] font-bold text-foreground">${(item.menuItem.price * item.quantity).toFixed(2)}</span>
-                                    </td>
-                                  </tr>
-                                ))}
+                                      </td>
+                                      <td className="py-2.5 text-center">
+                                        <span className="text-[11px] font-bold text-foreground/70 bg-secondary px-2 py-0.5 rounded-md">×{qty}</span>
+                                      </td>
+                                      <td className="py-2.5 text-right">
+                                        <span className="text-[11px] text-muted-foreground">Rs. {price.toFixed(2)}</span>
+                                      </td>
+                                      <td className="py-2.5 text-right">
+                                        <span className="text-[11px] font-bold text-foreground">Rs. {(price * qty).toFixed(2)}</span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                               <tfoot>
                                 <tr className="border-t border-border/20">
@@ -765,7 +774,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                                     <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Order Total</span>
                                   </td>
                                   <td className="py-3 text-right">
-                                    <span className="text-sm font-display font-bold text-accent">${order.total.toFixed(2)}</span>
+                                    <span className="text-sm font-display font-bold text-accent">Rs. {order.total.toFixed(2)}</span>
                                   </td>
                                 </tr>
                               </tfoot>

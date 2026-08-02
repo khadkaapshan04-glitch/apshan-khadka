@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Shield, User, ChefHat, Lock, ArrowLeft } from 'lucide-react';
+import { X, Mail, Shield, User, ChefHat, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { db } from '../lib/supabaseDb';
 
 interface AuthModalProps {
@@ -47,6 +47,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -270,7 +272,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
@@ -278,8 +280,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       }}
                       placeholder="••••••••"
                       disabled={loading}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 text-foreground transition-all disabled:opacity-50"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-secondary border border-border/30 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 text-foreground transition-all disabled:opacity-50"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -288,7 +298,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
-                      type="password"
+                      type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);
@@ -296,8 +306,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       }}
                       placeholder="••••••••"
                       disabled={loading}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 text-foreground transition-all disabled:opacity-50"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-secondary border border-border/30 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 text-foreground transition-all disabled:opacity-50"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               </>
@@ -324,7 +342,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -332,8 +350,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     placeholder="••••••••"
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 text-foreground transition-all disabled:opacity-50"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-secondary border border-border/30 text-sm focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40 text-foreground transition-all disabled:opacity-50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
             )}

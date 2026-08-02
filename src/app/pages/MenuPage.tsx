@@ -104,6 +104,24 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
       }
       return [...prev, { menuItem: item, quantity: 1 }];
     });
+  };
+
+  const addCategoryToCart = () => {
+    const availableItems = filteredMenu.filter(item => item.is_available);
+    if (availableItems.length === 0) return;
+    
+    setCart(prev => {
+      let updated = [...prev];
+      availableItems.forEach(item => {
+        const existingIdx = updated.findIndex(i => i.menuItem.id === item.id);
+        if (existingIdx >= 0) {
+          updated[existingIdx] = { ...updated[existingIdx], quantity: updated[existingIdx].quantity + 1 };
+        } else {
+          updated.push({ menuItem: item, quantity: 1 });
+        }
+      });
+      return updated;
+    });
     setIsCartOpen(true);
   };
 
@@ -130,7 +148,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
       discountAmount = appliedPromo.value;
     }
   }
-  // 100 points = $1
+  // 100 points = Rs. 1
   const loyaltyDiscount = pointsToRedeem / 100;
   discountAmount += loyaltyDiscount;
   discountAmount = Math.min(discountAmount, cartSubtotal); // Cannot discount more than subtotal
@@ -226,8 +244,8 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
             <div className="w-12 h-0.5 bg-accent/40 mx-auto mt-4" />
           </div>
 
-          {/* Category Filter Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+          {/* Category Filter Tabs & Bulk Add */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -241,6 +259,14 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                 {cat}
               </button>
             ))}
+
+            <button
+              onClick={addCategoryToCart}
+              className="px-4 py-2 rounded-full text-xs font-bold bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 transition-all cursor-pointer flex items-center gap-1.5"
+              title="Add all available dishes in this category to your order"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add All {activeCategory} Items
+            </button>
           </div>
 
           {/* Menu Items Grid */}
@@ -280,7 +306,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                         </div>
                       )}
                       <span className="absolute top-3 right-3 text-xs font-bold text-accent bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
-                        ${item.price.toFixed(2)}
+                        Rs. {item.price.toFixed(2)}
                       </span>
                     </div>
 
@@ -306,13 +332,37 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                   </div>
 
                   <div className="p-4 pt-0" style={{ transform: 'translateZ(40px)' }}>
-                    <button
-                      onClick={() => addToCart(item)}
-                      disabled={!item.is_available}
-                      className="w-full py-2 bg-secondary group-hover:bg-accent group-hover:text-white rounded-xl text-[11px] font-semibold text-foreground flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Add to Order
-                    </button>
+                    {(() => {
+                      const cartItem = cart.find(c => c.menuItem.id === item.id);
+                      if (cartItem) {
+                        return (
+                          <div className="flex items-center justify-between bg-accent/10 border border-accent/30 rounded-xl p-1 text-xs font-bold text-accent">
+                            <button
+                              onClick={() => updateQuantity(item.id, -1)}
+                              className="w-7 h-7 rounded-lg bg-card hover:bg-accent hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-border/20 text-foreground"
+                            >
+                              -
+                            </button>
+                            <span className="font-display font-bold text-sm px-2 text-foreground">{cartItem.quantity} in Order</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, 1)}
+                              className="w-7 h-7 rounded-lg bg-card hover:bg-accent hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-border/20 text-foreground"
+                            >
+                              +
+                            </button>
+                          </div>
+                        );
+                      }
+                      return (
+                        <button
+                          onClick={() => addToCart(item)}
+                          disabled={!item.is_available}
+                          className="w-full py-2 bg-secondary group-hover:bg-accent group-hover:text-white rounded-xl text-[11px] font-semibold text-foreground flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add to Order
+                        </button>
+                      );
+                    })()}
                   </div>
                 </motion.div>
               ))}
@@ -321,24 +371,35 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
         </div>
       </section>
 
-      {/* Floating Cart Button */}
+      {/* Multi-Item Order Floating Action Bar */}
       {cart.length > 0 && (
         <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="fixed bottom-8 right-8 z-40"
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-lg"
         >
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() => setIsCartOpen(true)}
-            className="bg-accent text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold shadow-lg cursor-pointer hover:shadow-xl transition-all relative"
-          >
-            <ShoppingCart className="w-6 h-6" />
-            <span className="absolute -top-1 -right-1 bg-foreground text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {cart.reduce((sum, i) => sum + i.quantity, 0)}
-            </span>
-          </motion.button>
+          <div className="bg-card/95 backdrop-blur-md border border-accent/30 rounded-2xl p-3.5 shadow-2xl flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-bold text-sm shadow-md">
+                {cart.reduce((sum, i) => sum + i.quantity, 0)}
+              </div>
+              <div>
+                <div className="text-xs font-bold text-foreground">
+                  {cart.length} Unique Dish{cart.length > 1 ? 'es' : ''} Selected
+                </div>
+                <div className="text-[10px] text-accent font-bold">
+                  Subtotal: Rs. {cartSubtotal.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="px-5 py-2.5 bg-accent hover:bg-accent/90 text-white rounded-xl text-xs font-bold tracking-wider shadow-lg transition-all cursor-pointer flex items-center gap-2"
+            >
+              <ShoppingCart className="w-4 h-4" /> Order All Items ({cart.reduce((sum, i) => sum + i.quantity, 0)}) →
+            </button>
+          </div>
         </motion.div>
       )}
 
@@ -397,7 +458,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                       </div>
                       <div className="flex-1 space-y-1">
                         <h4 className="text-xs font-semibold text-foreground line-clamp-1">{item.menuItem.name}</h4>
-                        <div className="text-[10px] text-accent font-bold">${item.menuItem.price.toFixed(2)} each</div>
+                        <div className="text-[10px] text-accent font-bold">Rs. {item.menuItem.price.toFixed(2)} each</div>
                         
                         {/* Quantity Controls */}
                         <div className="flex items-center gap-2 pt-1">
@@ -417,7 +478,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                         </div>
                       </div>
                       <div className="text-right flex flex-col justify-between items-end h-16">
-                        <span className="text-xs font-bold text-foreground">${(item.menuItem.price * item.quantity).toFixed(2)}</span>
+                        <span className="text-xs font-bold text-foreground">Rs. {(item.menuItem.price * item.quantity).toFixed(2)}</span>
                         <button 
                           onClick={() => updateQuantity(item.menuItem.id, -item.quantity)}
                           className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
@@ -504,7 +565,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                                 <Truck className="w-4 h-4 text-accent" />
                               </div>
                               <div>
-                                <p className="text-[10px] font-bold text-foreground">Free delivery on orders over $30!</p>
+                                <p className="text-[10px] font-bold text-foreground">Free delivery on orders over Rs. 30!</p>
                                 <p className="text-[9px] text-muted-foreground">Estimated delivery: 30-45 minutes</p>
                               </div>
                             </div>
@@ -675,7 +736,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
 
                         {currentUser && (currentUser.loyalty_points || 0) > 0 && (
                           <div>
-                            <label className="block text-[10px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Loyalty Points (100 = $1)</label>
+                            <label className="block text-[10px] font-bold text-foreground/80 mb-1.5 uppercase tracking-wider">Loyalty Points (100 = Rs. 1)</label>
                             <div className="flex justify-between items-center text-xs">
                               <span className="text-muted-foreground">Available: {currentUser.loyalty_points} pts</span>
                               {pointsToRedeem === 0 ? (
@@ -705,7 +766,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                       <div className="space-y-1.5 pt-1">
                         <div className="flex justify-between items-center text-xs text-foreground/80">
                           <span>Subtotal</span>
-                          <span className="font-semibold">${cartSubtotal.toFixed(2)}</span>
+                          <span className="font-semibold">Rs. {cartSubtotal.toFixed(2)}</span>
                         </div>
                         {orderType === 'delivery' && (
                           <div className="flex justify-between items-center text-xs">
@@ -714,24 +775,24 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                             </span>
                             {cartSubtotal >= 30 ? (
                               <span className="font-semibold text-emerald-600">
-                                <span className="line-through text-muted-foreground mr-1">${DELIVERY_FEE.toFixed(2)}</span>
+                                <span className="line-through text-muted-foreground mr-1">Rs. {DELIVERY_FEE.toFixed(2)}</span>
                                 FREE
                               </span>
                             ) : (
-                              <span className="font-semibold text-foreground/80">${DELIVERY_FEE.toFixed(2)}</span>
+                              <span className="font-semibold text-foreground/80">Rs. {DELIVERY_FEE.toFixed(2)}</span>
                             )}
                           </div>
                         )}
                         {discountAmount > 0 && (
                           <div className="flex justify-between items-center text-xs text-emerald-600">
                             <span>Discount</span>
-                            <span className="font-semibold">-${discountAmount.toFixed(2)}</span>
+                            <span className="font-semibold">-Rs. {discountAmount.toFixed(2)}</span>
                           </div>
                         )}
                         <div className="flex justify-between items-center text-sm font-bold text-foreground border-t border-border/20 pt-2">
                           <span>Total</span>
                           <span className="text-lg text-accent">
-                            ${(orderType === 'delivery' && cartSubtotal >= 30 ? cartSubtotal : cartTotal).toFixed(2)}
+                            Rs. {(orderType === 'delivery' && cartSubtotal >= 30 ? cartSubtotal : cartTotal).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -742,7 +803,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                       >
                         {orderType === 'delivery' && <Truck className="w-3.5 h-3.5" />}
                         {orderType === 'delivery' ? 'Place Delivery Order' : `Place Order`}
-                        {' '}(${cartTotal.toFixed(2)})
+                        {' '}(Rs. {cartTotal.toFixed(2)})
                       </button>
                     </form>
                   )}
@@ -809,7 +870,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between"><span className="text-muted-foreground">Amount:</span> <span className="font-bold text-accent">${orderSuccess.total.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Amount:</span> <span className="font-bold text-accent">Rs. {orderSuccess.total.toFixed(2)}</span></div>
               </div>
               <div className="flex gap-2">
                 <button

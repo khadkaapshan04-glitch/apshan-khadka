@@ -347,7 +347,7 @@ export const KitchenView: React.FC = () => {
                       ? 'Delivery' 
                       : 'Takeaway'}
                   </td>
-                  <td className="py-2.5 text-accent font-bold">${order.total.toFixed(2)}</td>
+                  <td className="py-2.5 text-accent font-bold">Rs. {order.total.toFixed(2)}</td>
                   <td className="py-2.5">
                     <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${
                       order.status === 'delivered' 

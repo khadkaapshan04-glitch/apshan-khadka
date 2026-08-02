@@ -240,17 +240,17 @@ export const AdminView: React.FC = () => {
   };
 
   // --- ANALYTICS CALCULATIONS ---
-  const totalSales = orders.reduce((sum, o) => o.status === 'delivered' ? sum + o.total : sum, 0);
+  const totalSales = orders.reduce((sum, o) => o.status !== 'cancelled' ? sum + (Number(o.total) || 0) : sum, 0);
   const totalOrdersCount = orders.length;
   const activeReservationsCount = reservations.filter(r => r.status === 'pending').length;
   
-  // Sales Trend chart data (Hourly mock calculation based on real times)
+  // Sales Trend chart data (Hourly calculation based on real times)
   const salesByHour = (() => {
     const hourlyData: { [key: string]: number } = {};
     orders.forEach(o => {
-      if (o.status !== 'delivered') return;
+      if (o.status === 'cancelled') return;
       const hour = new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(':')[0];
-      hourlyData[hour] = (hourlyData[hour] || 0) + o.total;
+      hourlyData[hour] = (hourlyData[hour] || 0) + (Number(o.total) || 0);
     });
 
     // Sort or map into array
@@ -276,9 +276,9 @@ export const AdminView: React.FC = () => {
   const categoryStats = (() => {
     const stats: { [key: string]: number } = { Starters: 0, Mains: 0, Desserts: 0, Beverages: 0 };
     orders.forEach(o => {
-      o.items.forEach(it => {
-        const cat = it.menuItem.category;
-        stats[cat] = (stats[cat] || 0) + it.quantity;
+      (o.items || []).forEach((it: any) => {
+        const cat = it.category ?? it.menuItem?.category ?? 'Mains';
+        stats[cat] = (stats[cat] || 0) + (it.quantity || 1);
       });
     });
 
@@ -340,7 +340,7 @@ export const AdminView: React.FC = () => {
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total Sales</div>
-                <div className="text-xl font-bold text-foreground">${totalSales.toFixed(2)}</div>
+                <div className="text-xl font-bold text-foreground">Rs. {totalSales.toFixed(2)}</div>
               </div>
             </div>
 
@@ -475,7 +475,7 @@ export const AdminView: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Price ($) *</label>
+                        <label className="block text-[10px] font-bold text-foreground/80 mb-1 uppercase tracking-wider">Price (Rs.) *</label>
                         <input 
                           type="number" step="0.01" required value={crudPrice} onChange={e => setCrudPrice(Number(e.target.value))} 
                           placeholder="Price" className="w-full px-3.5 py-2 rounded-xl bg-secondary border border-border/30 text-xs focus:outline-none focus:border-accent"
@@ -571,7 +571,7 @@ export const AdminView: React.FC = () => {
                         </div>
                       </td>
                       <td className="p-4 font-medium">{item.category}</td>
-                      <td className="p-4 font-bold text-accent">${item.price.toFixed(2)}</td>
+                      <td className="p-4 font-bold text-accent">Rs. {item.price.toFixed(2)}</td>
                       <td className="p-4">
                         <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${
                           item.is_available 
@@ -1009,7 +1009,7 @@ export const AdminView: React.FC = () => {
                         {order.items.map((it: any) => `${it.menuItem?.name || it.name} ×${it.quantity}`).join(', ')}
                       </td>
                       <td className="px-4 py-3 text-xs font-bold text-foreground">
-                        ${order.total.toFixed(2)}
+                        Rs. {order.total.toFixed(2)}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${

@@ -1,3 +1,12 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* Hide default browser scrollbar globally */
+::-webkit-scrollbar {
+  display: none;
+}
+html, body {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
