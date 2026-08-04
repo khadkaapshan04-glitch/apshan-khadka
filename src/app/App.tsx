@@ -148,19 +148,20 @@ export default function App() {
     <div className="min-h-screen bg-background overflow-x-hidden pb-12 relative">
       <GoldenEmbersBackground />
 
-      {/* ── Navbar ── */}
-      <motion.header
-        initial={{ y: -72, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled || location.pathname !== '/'
-            ? "bg-background/90 backdrop-blur-xl shadow-sm border-b border-border/30"
-            : "bg-transparent"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="flex items-center justify-between h-[72px]">
+      {/* ── Navbar (Hidden on first animation route '/') ── */}
+      {location.pathname !== '/' && (
+        <motion.header
+          initial={{ y: -72, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+            isScrolled || location.pathname !== '/'
+              ? "bg-background/90 backdrop-blur-xl shadow-sm border-b border-border/30"
+              : "bg-transparent"
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-6 lg:px-10">
+            <div className="flex items-center justify-between h-[72px]">
 
             {/* Left side - Hamburger Menu + Logo */}
             <div className="flex items-center gap-4">
@@ -306,6 +307,7 @@ export default function App() {
           </div>
         </div>
       </motion.header>
+      )}
 
       {/* ── Sidebar ── */}
       <AnimatePresence>
