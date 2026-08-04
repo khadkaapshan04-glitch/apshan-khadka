@@ -21,6 +21,7 @@ const DELIVERY_FEE = 4.99;
 export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const location = useLocation();
   const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [menuLoading, setMenuLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>(db.getCart());
@@ -57,6 +58,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
 
   const fetchMenuAndRatings = async () => {
+    setMenuLoading(true);
     try {
       const [menuData, reviewsData] = await Promise.all([
         db.getMenu(),
@@ -83,6 +85,8 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
       setRatings(finalRatings);
     } catch (e) {
       console.error('Error fetching menu items:', e);
+    } finally {
+      setMenuLoading(false);
     }
   };
 
@@ -305,12 +309,22 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
           </div>
 
           {/* Menu Items Grid */}
-          {filteredMenu.length === 0 ? (
+          {menuLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-3">
+                <span className="w-8 h-8 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
+                <span className="text-xs text-muted-foreground font-medium">Loading dishes...</span>
+              </div>
+            </div>
+          ) : filteredMenu.length === 0 && (searchQuery.trim() !== '' || activeCategory !== 'All') ? (
             <div className="bg-card border border-border/20 rounded-2xl p-12 text-center max-w-md mx-auto my-8">
               <Search className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
               <h3 className="font-display text-lg font-bold text-foreground mb-1">No dishes found</h3>
               <p className="text-xs text-muted-foreground mb-4">
-                We couldn't find any dishes matching "{searchQuery}" in {activeCategory === 'All' ? 'the menu' : activeCategory}.
+                {searchQuery.trim() !== '' 
+                  ? `We couldn't find any dishes matching "${searchQuery}"${activeCategory !== 'All' ? ` in ${activeCategory}` : ''}.`
+                  : `No dishes in ${activeCategory} yet.`
+                }
               </p>
               <button
                 onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
