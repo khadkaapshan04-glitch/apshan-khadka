@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CheckCircle2,
   Truck, UtensilsCrossed, PackageOpen, MapPin, Phone, MessageSquare, Clock,
-  CreditCard, Banknote, Wallet, Receipt, Star
+  CreditCard, Banknote, Wallet, Receipt, Star, Search, X
 } from 'lucide-react';
 import { db } from '../lib/supabaseDb';
 import { MenuItem, Order, UserProfile } from '../lib/types';
@@ -22,6 +22,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const location = useLocation();
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [cart, setCart] = useState<{ menuItem: MenuItem; quantity: number }[]>(db.getCart());
   const [ratings, setRatings] = useState<Record<string, { avg: number; count: number }>>({});
   const [reviewItem, setReviewItem] = useState<MenuItem | null>(null);
@@ -91,9 +92,15 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
 
   const categories = ['All', 'Starters', 'Mains', 'Desserts', 'Beverages'];
 
-  const filteredMenu = activeCategory === 'All' 
-    ? menu 
-    : menu.filter(item => item.category === activeCategory);
+  const filteredMenu = menu.filter(item => {
+    const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query ||
+      item.name.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query);
+    return matchesCategory && matchesSearch;
+  });
 
   const addToCart = (item: MenuItem) => {
     if (!item.is_available) return;
@@ -244,6 +251,34 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
             <div className="w-12 h-0.5 bg-accent/40 mx-auto mt-4" />
           </div>
 
+          {/* Search Input Bar */}
+          <div className="max-w-md mx-auto mb-6 relative">
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-4 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search dishes, ingredients, or starters..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 rounded-2xl bg-card border border-border/30 text-xs font-medium text-foreground placeholder:text-muted-foreground/60 shadow-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3.5 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <div className="text-[10px] text-muted-foreground font-semibold mt-2 text-center">
+                Found {filteredMenu.length} dish{filteredMenu.length === 1 ? '' : 'es'} matching "{searchQuery}"
+              </div>
+            )}
+          </div>
+
           {/* Category Filter Tabs & Bulk Add */}
           <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
             {categories.map((cat) => (
@@ -270,8 +305,23 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
           </div>
 
           {/* Menu Items Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <AnimatePresence mode="popLayout">
+          {filteredMenu.length === 0 ? (
+            <div className="bg-card border border-border/20 rounded-2xl p-12 text-center max-w-md mx-auto my-8">
+              <Search className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
+              <h3 className="font-display text-lg font-bold text-foreground mb-1">No dishes found</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                We couldn't find any dishes matching "{searchQuery}" in {activeCategory === 'All' ? 'the menu' : activeCategory}.
+              </p>
+              <button
+                onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
+                className="px-5 py-2 bg-accent text-white text-xs font-bold rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer"
+              >
+                Reset Search & Filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <AnimatePresence mode="popLayout">
               {filteredMenu.map((item) => (
                 <motion.div
                   key={item.id}
@@ -368,8 +418,9 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
               ))}
             </AnimatePresence>
           </div>
-        </div>
-      </section>
+        )}
+      </div>
+    </section>
 
       {/* Multi-Item Order Floating Action Bar */}
       {cart.length > 0 && (
