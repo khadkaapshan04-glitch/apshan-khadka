@@ -44,6 +44,7 @@ export default function App() {
   const [pendingLoginRedirect, setPendingLoginRedirect] = useState(false);
 
   const currentUser = profile ? {
+    id: profile.id,
     email: profile.email,
     fullName: profile.full_name,
     role: profile.role

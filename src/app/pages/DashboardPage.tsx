@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag, DollarSign, CalendarDays, UtensilsCrossed,
   TrendingUp, Clock, ChevronDown, ChevronUp, Star, Receipt,
-  Calendar, Users, MapPin, ArrowUpRight, Sparkles, Printer
+  Calendar, Users, MapPin, ArrowUpRight, Sparkles, Printer, XCircle
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -144,58 +144,141 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [cancellingResId, setCancellingResId] = useState<string | null>(null);
+
+  /* Cancel an order (only if pending or preparing) */
+  const handleCancelOrder = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    setCancellingOrderId(orderId);
+    try {
+      await db.updateOrderStatus(orderId, 'cancelled');
+      setUserOrders(prev =>
+        prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o)
+      );
+    } catch (e) {
+      console.error('Failed to cancel order:', e);
+      alert('Could not cancel the order. Please try again.');
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
+  /* Cancel a reservation (only if pending) */
+  const handleCancelReservation = async (resId: string) => {
+    if (!window.confirm('Are you sure you want to cancel this reservation?')) return;
+    setCancellingResId(resId);
+    try {
+      await db.updateReservationStatus(resId, 'cancelled');
+      setUserReservations(prev =>
+        prev.map(r => r.id === resId ? { ...r, status: 'cancelled' } : r)
+      );
+    } catch (e) {
+      console.error('Failed to cancel reservation:', e);
+      alert('Could not cancel the reservation. Please try again.');
+    } finally {
+      setCancellingResId(null);
+    }
+  };
 
   /* Fetch data */
   useEffect(() => {
-    const loadDashboardData = async () => {
-      if (currentUser) {
-        try {
-          const allOrders = await db.getOrders();
-          setUserOrders(allOrders.filter(o =>
-            (o.customer_email ?? o.customerEmail ?? '').toLowerCase() === currentUser.email.toLowerCase()
-          ));
-          const allRes = await db.getReservations();
-          setUserReservations(allRes.filter(r =>
-            r.email.toLowerCase() === currentUser.email.toLowerCase()
-          ));
-        } catch (e) {
-          console.error('Error fetching dashboard data:', e);
-        }
-      } else {
+    const fetchUserData = async () => {
+      if (!currentUser) {
         setUserOrders([]);
         setUserReservations([]);
+        return;
+      }
+
+      try {
+        const userEmail = currentUser.email.trim().toLowerCase();
+        const userId = currentUser.id;
+
+        // Fetch remote + local orders
+        const remoteOrders = await db.getOrders();
+        const localOrders = (JSON.parse(localStorage.getItem('flavore_orders') || '[]') as any[]).map((o: any) => ({
+          id: o.id,
+          customer_name: o.customerName ?? o.customer_name,
+          customerName: o.customerName ?? o.customer_name,
+          customer_email: o.customerEmail ?? o.customer_email,
+          customerEmail: o.customerEmail ?? o.customer_email,
+          items: o.items,
+          status: o.status,
+          total: Number(o.total || 0),
+          type: o.type,
+          table_number: o.tableNumber ?? o.table_number,
+          tableNumber: o.tableNumber ?? o.table_number,
+          user_id: o.user_id ?? o.userId,
+          created_at: o.created_at
+        }));
+
+        const ordersMap = new Map();
+        [...remoteOrders, ...localOrders].forEach(o => {
+          if (o && o.id && !ordersMap.has(o.id)) {
+            ordersMap.set(o.id, o);
+          }
+        });
+        const combinedOrders = Array.from(ordersMap.values());
+
+        const filteredOrders = combinedOrders.filter(o => {
+          const email = (o.customer_email ?? o.customerEmail ?? '').trim().toLowerCase();
+          const uid = o.user_id ?? o.userId;
+          return (email && email === userEmail) || (userId && uid === userId);
+        });
+        setUserOrders(filteredOrders);
+
+        // Fetch remote + local reservations
+        const remoteRes = await db.getReservations();
+        const localRes = (JSON.parse(localStorage.getItem('flavore_reservations') || '[]') as any[]).map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          phone: r.phone,
+          date: r.date,
+          time: r.time,
+          guests: r.guests,
+          status: r.status,
+          table_number: r.tableNumber ?? r.table_number,
+          tableNumber: r.tableNumber ?? r.table_number,
+          user_id: r.user_id ?? r.userId,
+          created_at: r.created_at
+        }));
+
+        const resMap = new Map();
+        [...remoteRes, ...localRes].forEach(r => {
+          if (r && r.id && !resMap.has(r.id)) {
+            resMap.set(r.id, r);
+          }
+        });
+        const combinedRes = Array.from(resMap.values());
+
+        const filteredRes = combinedRes.filter(r => {
+          const email = (r.email ?? '').trim().toLowerCase();
+          const uid = r.user_id ?? r.userId;
+          return (email && email === userEmail) || (userId && uid === userId);
+        });
+        setUserReservations(filteredRes);
+      } catch (e) {
+        console.error('Error fetching dashboard data:', e);
       }
     };
-    loadDashboardData();
-  }, [currentUser]);
 
-  /* Live poll for order updates */
-  useEffect(() => {
-    if (!currentUser) return;
-    const interval = setInterval(async () => {
-      try {
-        const allOrders = await db.getOrders();
-        setUserOrders(allOrders.filter(o =>
-          (o.customer_email ?? o.customerEmail ?? '').toLowerCase() === currentUser.email.toLowerCase()
-        ));
-        const allRes = await db.getReservations();
-        setUserReservations(allRes.filter(r =>
-          r.email.toLowerCase() === currentUser.email.toLowerCase()
-        ));
-      } catch (e) {
-        console.error('Error polling dashboard updates:', e);
-      }
-    }, 5000);
+    fetchUserData();
+    const interval = setInterval(fetchUserData, 4000);
     return () => clearInterval(interval);
   }, [currentUser]);
 
   /* ─── Computed Analytics ─── */
   const analytics = useMemo(() => {
-    const totalSpent = userOrders.reduce((sum, o) => sum + o.total, 0);
+    const totalSpent = userOrders.reduce((sum, o) => {
+      if (o.status === 'cancelled') return sum;
+      return sum + (Number(o.total) || 0);
+    }, 0);
+
     const totalOrders = userOrders.length;
     const totalReservations = userReservations.length;
     const activeOrders = userOrders.filter(o =>
-      o.status === 'pending' || o.status === 'preparing' || o.status === 'ready'
+      o.status === 'pending' || o.status === 'preparing' || o.status === 'ready' || o.status === 'out-for-delivery'
     ).length;
 
     // Favorite item calculation
@@ -213,9 +296,10 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
     // Spending by date for chart
     const spendingByDate: Record<string, number> = {};
     userOrders.forEach(o => {
+      if (o.status === 'cancelled') return;
       const d = new Date(o.created_at);
       const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      spendingByDate[key] = (spendingByDate[key] || 0) + o.total;
+      spendingByDate[key] = (spendingByDate[key] || 0) + (Number(o.total) || 0);
     });
     const chartData = Object.entries(spendingByDate)
       .map(([date, amount]) => ({ date, amount }))
@@ -224,6 +308,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
     // Spending by category for pie chart
     const categorySpending: Record<string, number> = {};
     userOrders.forEach(o => {
+      if (o.status === 'cancelled') return;
       (o.items || []).forEach((item: any) => {
         const cat = item.menuItem?.category ?? item.category ?? 'Mains';
         const price = Number(item.menuItem?.price ?? item.price ?? 0);
@@ -233,7 +318,8 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
     const categoryData = Object.entries(categorySpending).map(([name, value]) => ({ name, value }));
 
     // Average order value
-    const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
+    const validOrdersCount = userOrders.filter(o => o.status !== 'cancelled').length;
+    const avgOrderValue = validOrdersCount > 0 ? totalSpent / validOrdersCount : 0;
 
     return {
       totalSpent, totalOrders, totalReservations, activeOrders,
@@ -717,7 +803,6 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                           className="overflow-hidden"
                         >
                           <div className="px-5 pb-5 border-t border-border/15">
-                            {/* Progress bar for active */}
                             {order.status !== 'delivered' && order.status !== 'cancelled' && (
                               <div className="mt-4 mb-4 max-w-md">
                                 <OrderProgressBar status={order.status} type={order.type} />
@@ -768,16 +853,6 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                                   );
                                 })}
                               </tbody>
-                              <tfoot>
-                                <tr className="border-t border-border/20">
-                                  <td colSpan={3} className="py-3 text-right">
-                                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Order Total</span>
-                                  </td>
-                                  <td className="py-3 text-right">
-                                    <span className="text-sm font-display font-bold text-accent">Rs. {order.total.toFixed(2)}</span>
-                                  </td>
-                                </tr>
-                              </tfoot>
                             </table>
 
                             {order.type === 'delivery' && (order.deliveryAddress || order.deliveryPhone || order.estimatedDelivery) && (
@@ -812,11 +887,25 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                               </div>
                             )}
 
-                            {/* View Bill Button */}
-                            <div className="mt-4 flex justify-end">
+                            {/* Order Actions Row */}
+                            <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+                              {(order.status === 'pending' || order.status === 'preparing') && (
+                                <button
+                                  onClick={() => handleCancelOrder(order.id)}
+                                  disabled={cancellingOrderId === order.id}
+                                  className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-red-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {cancellingOrderId === order.id ? (
+                                    <span className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <XCircle className="w-3.5 h-3.5" />
+                                  )}
+                                  Cancel Order
+                                </button>
+                              )}
                               <button
                                 onClick={() => setReceiptOrder(order)}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-secondary text-foreground text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-accent hover:text-white transition-all cursor-pointer border border-border/30"
+                                className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-secondary text-foreground text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-accent hover:text-white transition-all cursor-pointer border border-border/30"
                               >
                                 <Printer className="w-3.5 h-3.5" /> View Bill
                               </button>
@@ -899,14 +988,30 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
                         </div>
                       </div>
 
-                      {/* Reservation date display */}
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-[10px] text-muted-foreground font-medium">Reservation Date</p>
-                        <p className="text-sm font-display font-bold text-foreground">
-                          {new Date(res.date + 'T00:00:00').toLocaleDateString('en-US', {
-                            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-                          })}
-                        </p>
+                      {/* Reservation date + cancel button */}
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <div className="text-right">
+                          <p className="text-[10px] text-muted-foreground font-medium">Reservation Date</p>
+                          <p className="text-sm font-display font-bold text-foreground">
+                            {new Date(res.date + 'T00:00:00').toLocaleDateString('en-US', {
+                              weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                        {(res.status === 'pending' || res.status === 'confirmed') && (
+                          <button
+                            onClick={() => handleCancelReservation(res.id)}
+                            disabled={cancellingResId === res.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-red-100 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {cancellingResId === res.id ? (
+                              <span className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <XCircle className="w-3 h-3" />
+                            )}
+                            Cancel Reservation
+                          </button>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -915,7 +1020,7 @@ export function DashboardPage({ currentUser }: DashboardPageProps) {
             </motion.div>
           )}
         </AnimatePresence>
-    </div>
+      </div>
 
       {/* Receipt Modal */}
       <ReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
