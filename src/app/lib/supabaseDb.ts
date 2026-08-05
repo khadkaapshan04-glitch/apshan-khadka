@@ -409,7 +409,10 @@ export const db = {
       console.warn('Using local orders because Supabase orders fetch failed:', error);
       return localDb.getOrders().map(normalizeOrder);
     }
-    return (data ?? []).map(order => {
+    
+    // Fetch local orders to merge with Supabase orders
+    const localOrders = localDb.getOrders().map(normalizeOrder);
+    const supabaseOrders = (data ?? []).map(order => {
       const items = ((order.items as unknown as any[]) || []).map(it => ({
         ...it,
         menuItem: it.menuItem ?? {
@@ -446,6 +449,13 @@ export const db = {
         created_at: order.created_at,
       };
     });
+    
+    // Merge local and Supabase orders, filtering out duplicates by ID
+    const allOrders = [...supabaseOrders, ...localOrders];
+    const uniqueOrders = Array.from(new Map(allOrders.map(o => [o.id, o])).values());
+    uniqueOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    return uniqueOrders;
   },
 
   placeOrder: async (orderData: any): Promise<any | null> => {
@@ -486,9 +496,6 @@ export const db = {
       delivery_address: orderData.delivery_address ?? orderData.deliveryAddress ?? null,
       delivery_phone: orderData.delivery_phone ?? orderData.deliveryPhone ?? null,
       delivery_notes: orderData.delivery_notes ?? orderData.deliveryNotes ?? null,
-      discount_amount: orderData.discount_amount ?? orderData.discountAmount ?? 0,
-      promo_code: orderData.promo_code ?? orderData.promoCode ?? null,
-      loyalty_points_earned: Math.floor((orderData.total || 0) * 10),
       payment_method: orderData.payment_method ?? orderData.paymentMethod ?? 'cash',
       payment_status: orderData.payment_method === 'cash' ? 'pending' : 'paid',
       user_id: session?.user?.id || null,
@@ -513,7 +520,7 @@ export const db = {
 
     // Update loyalty points if user is logged in
     if (session?.user?.id) {
-      const pointsEarned = insertData.loyalty_points_earned as number;
+      const pointsEarned = Math.floor((orderData.total || 0) * 10);
       const pointsRedeemed = orderData.pointsRedeemed || 0;
       const pointsDelta = pointsEarned - pointsRedeemed;
 
