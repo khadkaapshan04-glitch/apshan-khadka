@@ -16,7 +16,7 @@ interface MenuPageProps {
   onOpenAuth: () => void;
 }
 
-const DELIVERY_FEE = 4.99;
+const DELIVERY_FEE = 150;
 
 export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   const location = useLocation();
@@ -149,7 +149,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
   };
 
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
-  const deliveryFee = orderType === 'delivery' && cartSubtotal < 30 ? DELIVERY_FEE : 0;
+  const deliveryFee = orderType === 'delivery' && cartSubtotal < 1000 ? DELIVERY_FEE : 0;
   
   let discountAmount = 0;
   if (appliedPromo) {
@@ -838,7 +838,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                             <span className="text-foreground/80 flex items-center gap-1">
                               <Truck className="w-3 h-3" /> Delivery Fee
                             </span>
-                            {cartSubtotal >= 30 ? (
+                            {cartSubtotal >= 1000 ? (
                               <span className="font-semibold text-emerald-600">
                                 <span className="line-through text-muted-foreground mr-1">Rs. {DELIVERY_FEE.toFixed(2)}</span>
                                 FREE
@@ -857,7 +857,7 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                         <div className="flex justify-between items-center text-sm font-bold text-foreground border-t border-border/20 pt-2">
                           <span>Total</span>
                           <span className="text-lg text-accent">
-                            Rs. {(orderType === 'delivery' && cartSubtotal >= 30 ? cartSubtotal : cartTotal).toFixed(2)}
+                            Rs. {(orderType === 'delivery' && cartSubtotal >= 1000 ? cartSubtotal : cartTotal).toFixed(2)}
                           </span>
                         </div>
                       </div>

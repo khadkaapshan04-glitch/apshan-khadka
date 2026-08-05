@@ -239,6 +239,14 @@ export const AdminView: React.FC = () => {
     refreshData();
   };
 
+  // Helper for formatting currency with proper comma grouping (e.g. Rs. 2,50,000.00)
+  const formatRs = (val: number) => {
+    return (Number(val) || 0).toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
   // --- ANALYTICS CALCULATIONS ---
   const totalSales = orders.reduce((sum, o) => o.status !== 'cancelled' ? sum + (Number(o.total) || 0) : sum, 0);
   const totalOrdersCount = orders.length;
@@ -340,7 +348,7 @@ export const AdminView: React.FC = () => {
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total Sales</div>
-                <div className="text-xl font-bold text-foreground">Rs. {totalSales.toFixed(2)}</div>
+                <div className="text-xl font-bold text-foreground">Rs. {formatRs(totalSales)}</div>
               </div>
             </div>
 
@@ -571,7 +579,7 @@ export const AdminView: React.FC = () => {
                         </div>
                       </td>
                       <td className="p-4 font-medium">{item.category}</td>
-                      <td className="p-4 font-bold text-accent">Rs. {item.price.toFixed(2)}</td>
+                      <td className="p-4 font-bold text-accent">Rs. {formatRs(item.price)}</td>
                       <td className="p-4">
                         <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${
                           item.is_available 
@@ -1009,7 +1017,7 @@ export const AdminView: React.FC = () => {
                         {order.items.map((it: any) => `${it.menuItem?.name || it.name} ×${it.quantity}`).join(', ')}
                       </td>
                       <td className="px-4 py-3 text-xs font-bold text-foreground">
-                        Rs. {order.total.toFixed(2)}
+                        Rs. {formatRs(order.total)}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${
