@@ -16,6 +16,7 @@ import { CulinaryLandingPage } from "./pages/CulinaryLandingPage";
 import { NightAtFlavore } from "./pages/NightAtFlavore";
 import { TheRitual } from "./pages/TheRitual";
 import { ForSomeoneSpecial } from "./pages/ForSomeoneSpecial";
+import { NotFoundPage } from "./pages/NotFoundPage";
 
 const STORY_COMPONENTS = [CulinaryLandingPage, NightAtFlavore, TheRitual, ForSomeoneSpecial];
 const RandomStory = STORY_COMPONENTS[Math.floor(Math.random() * STORY_COMPONENTS.length)];
@@ -481,7 +482,7 @@ export default function App() {
               )
             }
           />
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
 
