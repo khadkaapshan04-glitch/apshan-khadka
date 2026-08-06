@@ -93,6 +93,27 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
       return;
     }
 
+    if (resName.trim().length < 2 || /\d/.test(resName)) {
+      alert('Please enter a valid Full Name containing text letters only (numbers are not allowed).');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resEmail.trim())) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    const phoneDigits = resPhone.replace(/\D/g, '');
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      alert('Please enter a valid phone number containing 7 to 15 digits.');
+      return;
+    }
+
+    if (!Number.isInteger(Number(resGuests)) || Number(resGuests) <= 0) {
+      alert('Guest count must be a positive number.');
+      return;
+    }
+
     if (!selectedTableId) {
       alert('Please select an available table from the layout.');
       return;
@@ -234,8 +255,8 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                       type="text" 
                       required
                       value={resName} 
-                      onChange={e => setResName(e.target.value)} 
-                      placeholder="Your Name"
+                      onChange={e => setResName(e.target.value.replace(/\d/g, ''))} 
+                      placeholder="Your Name (Letters only)"
                       className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
                     />
                   </div>
@@ -256,8 +277,8 @@ export function BookTablePage({ currentUser, onOpenAuth }: BookTablePageProps) {
                       type="tel" 
                       required
                       value={resPhone} 
-                      onChange={e => setResPhone(e.target.value)} 
-                      placeholder="e.g. +1 (555) 123-4567"
+                      onChange={e => setResPhone(e.target.value.replace(/[^\d\s+\-()]/g, ''))} 
+                      placeholder="e.g. +1 (555) 123-4567 (Digits only)"
                       className="w-full px-4 py-2.5 rounded-xl bg-secondary border border-border/30 text-xs text-foreground focus:outline-none focus:border-accent/40"
                     />
                   </div>

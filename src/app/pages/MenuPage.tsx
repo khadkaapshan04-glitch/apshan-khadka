@@ -185,17 +185,22 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
       return;
     }
     if (cart.length === 0) return;
-    if (orderType === 'dine-in' && !tableNumber) {
-      alert('Please enter a table number for Dine-In orders.');
-      return;
+    if (orderType === 'dine-in') {
+      if (!tableNumber || !/^\d+$/.test(tableNumber.trim())) {
+        alert('Please enter a valid numeric Table Number (numbers only).');
+        return;
+      }
     }
-    if (orderType === 'delivery' && !deliveryAddress.trim()) {
-      alert('Please enter a delivery address.');
-      return;
-    }
-    if (orderType === 'delivery' && !deliveryPhone.trim()) {
-      alert('Please enter a contact phone number for delivery.');
-      return;
+    if (orderType === 'delivery') {
+      if (!deliveryAddress.trim() || deliveryAddress.trim().length < 5) {
+        alert('Please enter a valid delivery address (minimum 5 characters).');
+        return;
+      }
+      const phoneDigits = deliveryPhone.replace(/\D/g, '');
+      if (!deliveryPhone.trim() || phoneDigits.length < 7 || phoneDigits.length > 15) {
+        alert('Please enter a valid contact phone number containing 7 to 15 digits.');
+        return;
+      }
     }
 
     try {
@@ -606,9 +611,9 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                             <input 
                               type="text" 
                               required
-                              placeholder="e.g. 5"
+                              placeholder="e.g. 5 (Numbers only)"
                               value={tableNumber} 
-                              onChange={e => setTableNumber(e.target.value)} 
+                              onChange={e => setTableNumber(e.target.value.replace(/\D/g, ''))} 
                               className="w-full px-3 py-1.5 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent"
                             />
                           </motion.div>
@@ -658,9 +663,9 @@ export function MenuPage({ currentUser, onOpenAuth }: MenuPageProps) {
                               <input 
                                 type="tel" 
                                 required
-                                placeholder="+1 (555) 123-4567"
+                                placeholder="+1 (555) 123-4567 (Digits only)"
                                 value={deliveryPhone} 
-                                onChange={e => setDeliveryPhone(e.target.value)} 
+                                onChange={e => setDeliveryPhone(e.target.value.replace(/[^\d\s+\-()]/g, ''))} 
                                 className="w-full px-3 py-2 rounded-lg bg-card border border-border/35 text-xs focus:outline-none focus:border-accent transition-colors"
                               />
                             </div>

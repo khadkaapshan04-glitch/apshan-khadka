@@ -145,9 +145,19 @@ export const AdminView: React.FC = () => {
       return;
     }
 
+    if (!/^\d+$/.test(tableNum.trim())) {
+      alert('Table number must be a valid numeric value (numbers only).');
+      return;
+    }
+
+    if (!Number.isInteger(Number(tableCapacity)) || Number(tableCapacity) <= 0) {
+      alert('Table capacity must be a positive whole number.');
+      return;
+    }
+
     const savedTable: any = {
       id: isEditingTable ? isEditingTable.id : undefined, // let Supabase auto-generate UUID for new table
-      number: tableNum,
+      number: tableNum.trim(),
       capacity: Number(tableCapacity),
       type: tableType,
       position: { x: Number(tablePosX), y: Number(tablePosY) }
@@ -194,13 +204,29 @@ export const AdminView: React.FC = () => {
       return;
     }
 
+    if (crudName.trim().length < 2 || /^\d+$/.test(crudName.trim())) {
+      alert('Dish name must be a valid text title (cannot be purely numbers).');
+      return;
+    }
+
+    const priceNum = Number(crudPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      alert('Dish price must be a valid positive number.');
+      return;
+    }
+
+    if (!/^https?:\/\/.+/.test(crudImg.trim())) {
+      alert('Please enter a valid HTTP/HTTPS image URL.');
+      return;
+    }
+
     const savedItem: MenuItem = {
       id: isEditing ? isEditing.id : undefined as any, // let Supabase generate UUID
-      name: crudName,
+      name: crudName.trim(),
       description: crudDesc,
-      price: Number(crudPrice),
+      price: priceNum,
       category: crudCategory,
-      image_url: crudImg,
+      image_url: crudImg.trim(),
       is_available: crudAvailable
     };
 
